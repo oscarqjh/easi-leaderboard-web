@@ -18,7 +18,7 @@ export default function LeaderboardPage() {
           <em className="text-lb-primary italic">on Spatial Intelligence</em>
         </h1>
         <p className="mt-sm text-sm text-lb-text-muted">
-          Last updated: 2025-03-15 &middot; {data.length} models evaluated
+          Last updated: 2025-03-15  &middot; {data.length} models evaluated
         </p>
       </div>
       <OverviewClient data={data} />
