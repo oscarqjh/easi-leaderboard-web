@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+ * EASI Leaderboard - Global Styles
+ * Spatial Indigo palette, brutalist flat aesthetic
+ * ============================================================================ */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-lb-bg text-lb-text font-sans;
+  }
+
+  * {
+    border-radius: 0 !important;
+  }
+
+  ::selection {
+    background: rgba(67, 56, 202, 0.2);
+    color: #1e1e2e;
+  }
+}
+
+/* ============================================================================
+ * Animations
+ * ============================================================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes barGrow {
+  from {
+    width: 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-bar-grow {
+  animation: barGrow 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+
+/* ============================================================================
+ * Reduced Motion
+ * ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
+ * Scrollbar
+ * ============================================================================ */
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f5f5f2;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #e2e0dc;
+}
+
+/* ============================================================================
+ * Focus
+ * ============================================================================ */
+
+.focus-ring:focus-visible {
+  outline: 2px solid #4338ca;
+  outline-offset: 2px;
+}
