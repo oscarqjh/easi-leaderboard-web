@@ -22,11 +22,11 @@ function SortArrow({
   sortDirection: SortDirection;
 }) {
   if (column !== sortColumn) {
-    return <span className="text-lb-text-muted/40 ml-1">&#8597;</span>;
+    return <span className="text-lb-text-muted/40 ml-1 text-xs">&#8597;</span>;
   }
   return (
     <span
-      className={`ml-1 inline-block transition-transform duration-250 ${
+      className={`ml-1 text-xs inline-block transition-transform duration-200 ${
         sortDirection === "asc" ? "rotate-180" : ""
       }`}
     >
@@ -45,28 +45,29 @@ export default function LeaderboardTable({
 }: LeaderboardTableProps) {
   const benchmarkMap = new Map(BENCHMARKS.map((b) => [b.id, b]));
 
-  // Compute best average
   let bestAvg = -Infinity;
   for (const m of models) {
     if (m.average !== null && m.average > bestAvg) bestAvg = m.average;
   }
 
   return (
-    <div className="bg-lb-surface shadow-border-medium overflow-x-auto">
+    <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b-2 border-lb-border">
-            <th className="sticky left-0 z-10 bg-lb-surface px-3 py-3 text-left font-semibold text-lb-text-secondary text-xs uppercase tracking-wider w-12">
+            <th className="sticky left-0 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider w-12">
               #
             </th>
-            <th className="sticky left-12 z-10 bg-lb-surface px-3 py-3 text-left font-semibold text-lb-text-secondary text-xs uppercase tracking-wider min-w-[180px]">
+            <th className="sticky left-12 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider min-w-[180px]">
               Model
             </th>
             <th
-              className="px-3 py-3 text-right font-semibold text-xs uppercase tracking-wider cursor-pointer hover:text-lb-primary transition-colors duration-150 min-w-[80px]"
+              className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
+              }`}
               onClick={() => onSort("average")}
             >
-              <span className="text-lb-primary">Avg</span>
+              Avg
               <SortArrow
                 column="average"
                 sortColumn={sortColumn}
@@ -78,7 +79,9 @@ export default function LeaderboardTable({
               return (
                 <th
                   key={colId}
-                  className="px-3 py-3 text-right font-semibold text-lb-text-secondary text-xs uppercase tracking-wider cursor-pointer hover:text-lb-primary transition-colors duration-150 min-w-[80px]"
+                  className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                    sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
+                  }`}
                   onClick={() => onSort(colId)}
                 >
                   {meta?.name ?? colId}
@@ -97,28 +100,33 @@ export default function LeaderboardTable({
             <tr
               key={model.name}
               className={`
-                border-b border-lb-border/50
+                border-b border-lb-border/60
                 hover:bg-lb-primary-light transition-colors duration-150
-                ${i % 2 === 0 ? "bg-lb-surface" : "bg-lb-bg/30"}
+                ${i % 2 === 1 ? "bg-black/[0.01]" : ""}
               `}
             >
-              <td className="sticky left-0 z-10 px-3 py-2.5 bg-inherit">
+              <td className="sticky left-0 z-10 px-4 py-3 bg-inherit">
                 <RankBadge rank={model.rank} />
               </td>
-              <td className="sticky left-12 z-10 px-3 py-2.5 bg-inherit">
-                <span className="font-medium text-lb-text">{model.name}</span>
-                <span className="ml-2 text-xs text-lb-text-muted">
+              <td className="sticky left-12 z-10 px-4 py-3 bg-inherit">
+                <span className="font-semibold text-lb-text">{model.name}</span>
+                <span className="ml-2 text-xs text-lb-text-muted px-1.5 py-0.5 bg-lb-bg rounded">
                   {model.precision}
                 </span>
               </td>
-              <td className="px-3 py-2.5 text-right">
-                <ScoreCell
-                  value={model.average}
-                  isBest={model.average !== null && model.average === bestAvg}
-                />
+              <td className="px-4 py-3 text-right">
+                <span
+                  className={`font-mono text-sm font-semibold ${
+                    model.average !== null && model.average === bestAvg
+                      ? "text-lb-primary underline underline-offset-2 decoration-lb-primary/25"
+                      : "text-lb-text"
+                  }`}
+                >
+                  {model.average !== null ? model.average.toFixed(1) : "-/-"}
+                </span>
               </td>
               {visibleColumns.map((colId) => (
-                <td key={colId} className="px-3 py-2.5 text-right">
+                <td key={colId} className="px-4 py-3 text-right">
                   <ScoreCell
                     value={model.scores[colId] ?? null}
                     isBest={
@@ -135,7 +143,7 @@ export default function LeaderboardTable({
             <tr>
               <td
                 colSpan={visibleColumns.length + 3}
-                className="px-3 py-12 text-center text-lb-text-muted"
+                className="px-4 py-12 text-center text-lb-text-muted"
               >
                 No models match your filters.
               </td>

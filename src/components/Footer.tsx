@@ -8,7 +8,7 @@ export default function Footer() {
             href="https://github.com/EvolvingLMMs-Lab"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-lb-primary transition-colors duration-150"
+            className="underline underline-offset-2 decoration-lb-border hover:text-lb-primary transition-colors duration-150"
           >
             LMMs-Lab
           </a>

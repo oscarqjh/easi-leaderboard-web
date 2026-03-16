@@ -14,8 +14,8 @@ export default function ScoreCell({ value, isBest }: ScoreCellProps) {
     <span
       className={`font-mono text-sm ${
         isBest
-          ? "text-lb-best font-bold underline underline-offset-2 decoration-lb-best/40"
-          : "text-lb-text"
+          ? "text-lb-best font-semibold underline underline-offset-2 decoration-lb-best/30"
+          : "text-lb-text-secondary"
       }`}
     >
       {value.toFixed(1)}

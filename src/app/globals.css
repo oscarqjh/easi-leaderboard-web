@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ============================================================================
- * EASI Leaderboard - Global Styles
- * Spatial Indigo palette, brutalist flat aesthetic
+ * EASI Leaderboard — Editorial Style, Indigo Academic Palette
+ * Fraunces + DM Sans + IBM Plex Mono
  * ============================================================================ */
 
 @layer base {
@@ -18,13 +18,9 @@
     @apply bg-lb-bg text-lb-text font-sans;
   }
 
-  * {
-    border-radius: 0 !important;
-  }
-
   ::selection {
-    background: rgba(67, 56, 202, 0.2);
-    color: #1e1e2e;
+    background: rgba(99, 102, 241, 0.15);
+    color: #1e1b4b;
   }
 }
 
@@ -35,7 +31,7 @@
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -50,14 +46,13 @@
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeInUp 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-bar-grow {
-  animation: barGrow 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: barGrow 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Stagger delays */
 .stagger-1 { animation-delay: 50ms; }
 .stagger-2 { animation-delay: 100ms; }
 .stagger-3 { animation-delay: 150ms; }
@@ -87,11 +82,13 @@
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: #f5f5f2;
+  background: #f3f2f8;
+  border-radius: 3px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #e2e0dc;
+  background: #d4d1e5;
+  border-radius: 3px;
 }
 
 /* ============================================================================
@@ -99,6 +96,6 @@
  * ============================================================================ */
 
 .focus-ring:focus-visible {
-  outline: 2px solid #4338ca;
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
 }

@@ -75,7 +75,7 @@ export default function OverviewClient({ data }: OverviewClientProps) {
   return (
     <div className="space-y-md animate-fade-in-up">
       {/* Controls */}
-      <div className="bg-lb-surface shadow-border-medium p-md space-y-md">
+      <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm p-md space-y-md">
         <SearchBar
           value={filters.search}
           onChange={(v) => updateFilter("search", v)}

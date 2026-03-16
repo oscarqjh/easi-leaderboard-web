@@ -15,13 +15,13 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
   const maxScore = Math.max(...displayed.map((m) => m.average ?? 0));
 
   return (
-    <div className="bg-lb-surface shadow-border-medium p-md">
+    <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm p-md">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-sm text-xs font-semibold uppercase tracking-widest text-lb-text-secondary hover:text-lb-text transition-colors duration-150 mb-md"
+        className="flex items-center gap-sm text-xs font-semibold uppercase tracking-widest text-lb-text-muted hover:text-lb-text-secondary transition-colors duration-150 mb-md"
       >
         <svg
-          className={`w-3 h-3 transition-transform duration-250 ${
+          className={`w-3 h-3 transition-transform duration-200 ${
             collapsed ? "-rotate-90" : ""
           }`}
           fill="currentColor"
@@ -33,7 +33,7 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
       </button>
 
       {!collapsed && (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {displayed.map((model, i) => {
             const pct =
               model.average !== null && maxScore > 0
@@ -41,12 +41,12 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
                 : 0;
             return (
               <div key={model.name} className="flex items-center gap-sm">
-                <span className="w-36 text-xs font-medium text-lb-text truncate text-right">
+                <span className="w-36 text-xs font-medium text-lb-text-secondary truncate text-right">
                   {model.name}
                 </span>
-                <div className="flex-1 h-5 bg-lb-bg relative">
+                <div className="flex-1 h-5 bg-lb-bg rounded-sm border border-lb-border overflow-hidden">
                   <div
-                    className="h-full bg-lb-primary animate-bar-grow"
+                    className="h-full bg-lb-nav rounded-sm animate-bar-grow"
                     style={{
                       width: `${pct}%`,
                       animationDelay: `${i * 30}ms`,
@@ -54,7 +54,7 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
                     }}
                   />
                 </div>
-                <span className="w-12 text-xs font-mono text-lb-text-secondary text-right">
+                <span className="w-12 text-xs font-mono font-medium text-lb-text text-right">
                   {model.average !== null ? model.average.toFixed(1) : "-/-"}
                 </span>
               </div>

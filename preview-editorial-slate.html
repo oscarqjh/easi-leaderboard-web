@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EASI Leaderboard — Style C: Editorial Slate</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --text-muted: #a8a29e;
+    --primary: #292524;
+    --primary-subtle: rgba(41, 37, 36, 0.06);
+    --accent: #b91c1c;
+    --accent-subtle: rgba(185, 28, 28, 0.06);
+    --accent-muted: rgba(185, 28, 28, 0.12);
+    --best: #0f766e;
+    --border: #e7e5e4;
+    --border-emphasis: #d6d3d1;
+    --gold: #a16207;
+    --silver: #78716c;
+    --bronze: #9a3412;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  /* ── Style label ── */
+  .style-label {
+    text-align: center;
+    padding: 3rem 0 1rem;
+  }
+
+  .style-label h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  .style-label p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 580px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .style-label .tag {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 0.35em 0.9em;
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border-radius: 999px;
+    margin-bottom: 1rem;
+  }
+
+  /* ── Header ── */
+  .header {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .header-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .header-title span {
+    color: var(--accent);
+  }
+
+  .header-nav {
+    display: flex;
+    gap: 0.2rem;
+  }
+
+  .header-nav a {
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.4em 0.85em;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .header-nav a:hover {
+    background: var(--primary-subtle);
+    color: var(--text);
+  }
+
+  .header-nav a.active {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 2.5rem 0 1.5rem;
+  }
+
+  .hero h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.85rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+  }
+
+  .hero h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero .sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ── Controls ── */
+  .controls {
+    padding: 1.1rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+
+  .search-box svg {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px;
+    height: 15px;
+    color: var(--text-muted);
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 0.6rem 0.85rem 0.6rem 2.4rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .search-box input::placeholder { color: var(--text-muted); }
+  .search-box input:focus { border-color: var(--border-emphasis); box-shadow: 0 0 0 3px var(--primary-subtle); }
+
+  .control-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .btn-group button {
+    padding: 0.4em 0.9em;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    border: none;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-group button:last-child { border-right: none; }
+  .btn-group button:hover { background: var(--bg); color: var(--text); }
+  .btn-group button.active { background: var(--primary); color: #fff; }
+
+  .column-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .chip {
+    padding: 0.3em 0.7em;
+    font-size: 0.68rem;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .chip:hover { border-color: var(--border-emphasis); color: var(--text-secondary); }
+  .chip.active { background: var(--accent-subtle); border-color: var(--accent-muted); color: var(--accent); }
+
+  /* ── Bar chart ── */
+  .bar-section {
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .bar-section-title {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.85rem;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .bar-label {
+    width: 130px;
+    text-align: right;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 22px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: var(--radius-sm);
+    animation: barGrow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes barGrow { from { width: 0; } }
+
+  .bar-row:nth-child(2) .bar-fill { animation-delay: 40ms; opacity: 0.85; }
+  .bar-row:nth-child(3) .bar-fill { animation-delay: 80ms; opacity: 0.72; }
+  .bar-row:nth-child(4) .bar-fill { animation-delay: 120ms; opacity: 0.60; }
+  .bar-row:nth-child(5) .bar-fill { animation-delay: 160ms; opacity: 0.50; }
+
+  .bar-value {
+    width: 44px;
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* ── Table ── */
+  .table-card {
+    padding: 0;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  thead th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  thead th:hover { color: var(--text-secondary); }
+  thead th.sorted { color: var(--accent); }
+
+  .sort-arrow {
+    font-size: 0.55rem;
+    margin-left: 0.3rem;
+    opacity: 0.4;
+  }
+
+  thead th.sorted .sort-arrow { opacity: 1; }
+
+  tbody tr {
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr:nth-child(even) { background: rgba(0,0,0,0.01); }
+  tbody tr:hover { background: var(--primary-subtle); }
+
+  tbody td {
+    padding: 0.7rem 1rem;
+    white-space: nowrap;
+  }
+
+  td.score {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+    text-align: right;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  td.score.best {
+    color: var(--best);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(15, 118, 110, 0.3);
+  }
+
+  td.score.avg {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  td.score.avg.best {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(185, 28, 28, 0.25);
+  }
+
+  th.text-right { text-align: right; }
+
+  .model-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .model-meta {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+    padding: 0.15em 0.45em;
+    background: var(--bg);
+    border-radius: 3px;
+  }
+
+  /* ── Rank badges ── */
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .rank-badge.gold {
+    background: rgba(161, 98, 7, 0.08);
+    color: var(--gold);
+    border: 1px solid rgba(161, 98, 7, 0.15);
+  }
+
+  .rank-badge.silver {
+    background: rgba(120, 113, 108, 0.06);
+    color: var(--silver);
+    border: 1px solid rgba(120, 113, 108, 0.12);
+  }
+
+  .rank-badge.bronze {
+    background: rgba(154, 52, 18, 0.06);
+    color: var(--bronze);
+    border: 1px solid rgba(154, 52, 18, 0.12);
+  }
+
+  .rank-badge.plain {
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    border: none;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    padding: 2rem 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+
+  .footer a {
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--border);
+  }
+
+  .footer a:hover { color: var(--text); }
+
+  /* ── Animations ── */
+  .fade-in {
+    animation: fadeIn 0.45s ease-out both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <div class="style-label fade-in">
+    <span class="tag">Style C &middot; Editorial Slate</span>
+    <h1>Editorial Slate</h1>
+    <p>Clean, refined light theme with Fraunces serif headings, soft shadows, and warm stone tones. Magazine-quality typography with a muted crimson accent. Polished without being sterile.</p>
+  </div>
+
+  <!-- Header -->
+  <div class="header fade-in stagger-1">
+    <div class="header-title">EASI <span>Leaderboard</span></div>
+    <nav class="header-nav">
+      <a href="#" class="active">Leaderboard</a>
+      <a href="#">About</a>
+      <a href="#">Submit</a>
+    </nav>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero fade-in stagger-2">
+    <h2>EASI: Evaluation of MLLMs<br>on <em>Spatial Intelligence</em></h2>
+    <div class="sub">Last updated: 2025-03-15 &middot; 20 models evaluated</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card controls fade-in stagger-3">
+    <div class="controls-row">
+      <div class="search-box">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" placeholder="Search models...">
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="control-label">Protocol</span>
+        <div class="btn-group">
+          <button class="active">EASI-8</button>
+          <button>ALL</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="control-label">Precision</span>
+        <div class="btn-group">
+          <button class="active">All</button>
+          <button>bf16</button>
+          <button>fp16</button>
+        </div>
+      </div>
+    </div>
+    <div class="controls-row">
+      <span class="control-label">Columns</span>
+      <div class="column-chips">
+        <button class="chip active">VSI-Bench</button>
+        <button class="chip active">MMSI-Bench</button>
+        <button class="chip active">MindCube</button>
+        <button class="chip active">ViewSpatial</button>
+        <button class="chip active">SITE</button>
+        <button class="chip active">BLINK</button>
+        <button class="chip active">3DSRBench</button>
+        <button class="chip active">EmbSpatial</button>
+        <button class="chip">DSRBench</button>
+        <button class="chip">ERIQ</button>
+        <button class="chip">ERQA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar Chart -->
+  <div class="card bar-section fade-in stagger-3">
+    <div class="bar-section-title">Score Overview</div>
+    <div class="bar-row">
+      <span class="bar-label">GPT-4o</span>
+      <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+      <span class="bar-value">72.3</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Gemini-2.0-Flash</span>
+      <div class="bar-track"><div class="bar-fill" style="width:94%"></div></div>
+      <span class="bar-value">69.1</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Claude-3.5-Sonnet</span>
+      <div class="bar-track"><div class="bar-fill" style="width:92%"></div></div>
+      <span class="bar-value">67.8</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">GPT-4V</span>
+      <div class="bar-track"><div class="bar-fill" style="width:91%"></div></div>
+      <span class="bar-value">67.0</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">Gemini-1.5-Pro</span>
+      <div class="bar-track"><div class="bar-fill" style="width:89%"></div></div>
+      <span class="bar-value">66.8</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card table-card fade-in stagger-4">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50px">#</th>
+          <th>Model</th>
+          <th class="text-right sorted">Avg <span class="sort-arrow">&#9660;</span></th>
+          <th class="text-right">VSI <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">MMSI <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">MindCube <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">ViewSpa <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">SITE <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">BLINK <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">3DSR <span class="sort-arrow">&#8597;</span></th>
+          <th class="text-right">EmbSpa <span class="sort-arrow">&#8597;</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="rank-badge gold">1</span></td>
+          <td><span class="model-name">GPT-4o</span><span class="model-meta">bf16</span></td>
+          <td class="score avg best">72.3</td>
+          <td class="score best">81.2</td>
+          <td class="score best">68.4</td>
+          <td class="score best">72.1</td>
+          <td class="score best">75.8</td>
+          <td class="score best">69.3</td>
+          <td class="score best">71.5</td>
+          <td class="score best">66.9</td>
+          <td class="score best">73.2</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge silver">2</span></td>
+          <td><span class="model-name">Gemini-2.0-Flash</span><span class="model-meta">bf16</span></td>
+          <td class="score avg">69.1</td>
+          <td class="score">75.8</td>
+          <td class="score">65.2</td>
+          <td class="score">70.3</td>
+          <td class="score">73.1</td>
+          <td class="score">67.8</td>
+          <td class="score">69.4</td>
+          <td class="score">64.2</td>
+          <td class="score">71.5</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge bronze">3</span></td>
+          <td><span class="model-name">Claude-3.5-Sonnet</span><span class="model-meta">bf16</span></td>
+          <td class="score avg">67.8</td>
+          <td class="score">73.4</td>
+          <td class="score">64.1</td>
+          <td class="score">69.8</td>
+          <td class="score">71.2</td>
+          <td class="score">66.5</td>
+          <td class="score">68.7</td>
+          <td class="score">63.5</td>
+          <td class="score">70.8</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge plain">4</span></td>
+          <td><span class="model-name">GPT-4V</span><span class="model-meta">fp16</span></td>
+          <td class="score avg">67.0</td>
+          <td class="score">74.1</td>
+          <td class="score">63.7</td>
+          <td class="score">68.5</td>
+          <td class="score">70.9</td>
+          <td class="score">65.8</td>
+          <td class="score">67.6</td>
+          <td class="score">62.3</td>
+          <td class="score">69.4</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge plain">5</span></td>
+          <td><span class="model-name">Gemini-1.5-Pro</span><span class="model-meta">bf16</span></td>
+          <td class="score avg">66.8</td>
+          <td class="score">72.8</td>
+          <td class="score">62.5</td>
+          <td class="score">67.9</td>
+          <td class="score">70.3</td>
+          <td class="score">65.1</td>
+          <td class="score">67.2</td>
+          <td class="score">61.7</td>
+          <td class="score">68.9</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge plain">6</span></td>
+          <td><span class="model-name">Claude-3-Opus</span><span class="model-meta">bf16</span></td>
+          <td class="score avg">65.8</td>
+          <td class="score">71.5</td>
+          <td class="score">61.9</td>
+          <td class="score">66.8</td>
+          <td class="score">68.7</td>
+          <td class="score">63.8</td>
+          <td class="score">66.1</td>
+          <td class="score">60.2</td>
+          <td class="score">67.5</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge plain">7</span></td>
+          <td><span class="model-name">Qwen2-VL-72B</span><span class="model-meta">bf16</span></td>
+          <td class="score avg">64.0</td>
+          <td class="score">70.6</td>
+          <td class="score">62.8</td>
+          <td class="score">67.4</td>
+          <td class="score">69.5</td>
+          <td class="score">64.2</td>
+          <td class="score">66.9</td>
+          <td class="score">61.8</td>
+          <td class="score">68.3</td>
+        </tr>
+        <tr>
+          <td><span class="rank-badge plain">8</span></td>
+          <td><span class="model-name">InternVL2-76B</span><span class="model-meta">bf16</span></td>
+          <td class="score avg">62.4</td>
+          <td class="score">68.9</td>
+          <td class="score">61.3</td>
+          <td class="score">65.7</td>
+          <td class="score">67.8</td>
+          <td class="score">62.9</td>
+          <td class="score">65.2</td>
+          <td class="score">60.4</td>
+          <td class="score">66.8</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    EASI Leaderboard &middot; <a href="#">LMMs-Lab</a> &middot; Built with Next.js
+  </div>
+
+</div>
+
+</body>
+</html>

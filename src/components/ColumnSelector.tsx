@@ -18,8 +18,8 @@ export default function ColumnSelector({
   };
 
   return (
-    <div className="flex flex-wrap gap-xs">
-      <span className="text-xs font-semibold uppercase tracking-widest text-lb-text-secondary self-center mr-sm">
+    <div className="flex flex-wrap gap-xs items-center">
+      <span className="text-xs font-semibold uppercase tracking-widest text-lb-text-muted mr-sm">
         Columns
       </span>
       {BENCHMARKS.map((b) => {
@@ -28,11 +28,11 @@ export default function ColumnSelector({
           <button
             key={b.id}
             onClick={() => toggle(b.id)}
-            className={`px-2 py-1 text-xs font-medium transition-colors duration-150
+            className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all duration-150
               ${
                 active
-                  ? "bg-lb-primary-light text-lb-primary shadow-border-thin"
-                  : "bg-lb-bg text-lb-text-muted hover:text-lb-text-secondary"
+                  ? "bg-lb-accent-light border-lb-primary-muted text-lb-primary"
+                  : "bg-lb-surface border-lb-border text-lb-text-muted hover:text-lb-text-secondary hover:border-lb-border-emphasis"
               }
             `}
           >

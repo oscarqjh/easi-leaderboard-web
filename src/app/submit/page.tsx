@@ -57,8 +57,6 @@ export default function SubmitPage() {
     switch (step) {
       case 0:
         return form.modelName.trim().length > 0;
-      case 8:
-        return true;
       default:
         return true;
     }
@@ -92,13 +90,13 @@ export default function SubmitPage() {
   if (submitted) {
     return (
       <div className="max-w-3xl mx-auto px-md py-lg animate-fade-in-up">
-        <h1 className="font-heading text-heading font-bold text-lb-text mb-md">
+        <h1 className="font-heading text-heading font-semibold text-lb-text mb-md">
           Submission Generated
         </h1>
         <p className="text-sm text-lb-text-secondary mb-md">
           Copy the JSON below and submit it via GitHub pull request.
         </p>
-        <div className="bg-lb-surface shadow-border-medium p-md">
+        <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm p-md">
           <pre className="font-mono text-xs text-lb-text overflow-x-auto whitespace-pre">
             {generateJSON()}
           </pre>
@@ -109,7 +107,7 @@ export default function SubmitPage() {
             setStep(0);
             setForm(INITIAL_FORM);
           }}
-          className="mt-md px-4 py-2 bg-lb-primary text-white text-sm font-medium
+          className="mt-md px-4 py-2 bg-lb-nav text-white text-sm font-medium rounded-md
             hover:opacity-90 transition-opacity duration-150"
         >
           Submit Another
@@ -121,7 +119,7 @@ export default function SubmitPage() {
   return (
     <div className="max-w-3xl mx-auto px-md py-lg">
       <div className="animate-fade-in-up">
-        <h1 className="font-heading text-heading font-bold text-lb-text mb-md">
+        <h1 className="font-heading text-heading font-semibold text-lb-text mb-md">
           Submit a Model
         </h1>
 
@@ -131,13 +129,13 @@ export default function SubmitPage() {
             <div key={label} className="flex items-center">
               <button
                 onClick={() => setStep(i)}
-                className={`flex items-center gap-1 px-2 py-1 text-xs font-medium whitespace-nowrap transition-colors duration-150
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap rounded-md transition-all duration-150
                   ${
                     i === step
-                      ? "bg-lb-primary text-white"
+                      ? "bg-lb-nav text-white"
                       : i < step
-                      ? "bg-lb-primary-light text-lb-primary"
-                      : "bg-lb-bg text-lb-text-muted"
+                      ? "bg-lb-accent-light text-lb-primary"
+                      : "bg-lb-bg text-lb-text-muted border border-lb-border"
                   }
                 `}
               >
@@ -146,7 +144,7 @@ export default function SubmitPage() {
               </button>
               {i < STEPS.length - 1 && (
                 <div
-                  className={`w-4 h-0.5 ${
+                  className={`w-4 h-0.5 rounded-full ${
                     i < step ? "bg-lb-primary" : "bg-lb-border"
                   }`}
                 />
@@ -156,10 +154,10 @@ export default function SubmitPage() {
         </div>
 
         {/* Form steps */}
-        <div className="bg-lb-surface shadow-border-medium p-lg min-h-[200px]">
+        <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm p-lg min-h-[200px]">
           {step === 0 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Model Name
               </label>
               <input
@@ -167,15 +165,16 @@ export default function SubmitPage() {
                 value={form.modelName}
                 onChange={(e) => updateField("modelName", e.target.value)}
                 placeholder="e.g., organization/model-name"
-                className="w-full px-3 py-2 bg-lb-bg text-lb-text text-sm shadow-border-thin
-                  focus:outline-none focus:shadow-border-medium placeholder:text-lb-text-muted"
+                className="w-full px-3 py-2.5 bg-lb-bg text-lb-text text-sm rounded-md
+                  border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                  focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted"
               />
             </div>
           )}
 
           {step === 1 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Model Type
               </label>
               <div className="flex flex-wrap gap-sm">
@@ -183,11 +182,11 @@ export default function SubmitPage() {
                   <button
                     key={t}
                     onClick={() => updateField("modelType", t)}
-                    className={`px-4 py-2 text-sm font-medium transition-colors duration-150
+                    className={`px-4 py-2 text-sm font-medium rounded-md border transition-all duration-150
                       ${
                         form.modelType === t
-                          ? "bg-lb-primary text-white"
-                          : "bg-lb-bg text-lb-text-secondary shadow-border-thin hover:text-lb-text"
+                          ? "bg-lb-nav text-white border-lb-nav"
+                          : "bg-lb-bg text-lb-text-secondary border-lb-border hover:text-lb-text hover:border-lb-border-emphasis"
                       }
                     `}
                   >
@@ -200,7 +199,7 @@ export default function SubmitPage() {
 
           {step === 2 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Precision
               </label>
               <div className="flex flex-wrap gap-sm">
@@ -208,11 +207,11 @@ export default function SubmitPage() {
                   <button
                     key={p}
                     onClick={() => updateField("precision", p)}
-                    className={`px-4 py-2 text-sm font-mono font-medium transition-colors duration-150
+                    className={`px-4 py-2 text-sm font-mono font-medium rounded-md border transition-all duration-150
                       ${
                         form.precision === p
-                          ? "bg-lb-primary text-white"
-                          : "bg-lb-bg text-lb-text-secondary shadow-border-thin hover:text-lb-text"
+                          ? "bg-lb-nav text-white border-lb-nav"
+                          : "bg-lb-bg text-lb-text-secondary border-lb-border hover:text-lb-text hover:border-lb-border-emphasis"
                       }
                     `}
                   >
@@ -225,7 +224,7 @@ export default function SubmitPage() {
 
           {step === 3 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Model Revision
               </label>
               <input
@@ -233,15 +232,16 @@ export default function SubmitPage() {
                 value={form.revision}
                 onChange={(e) => updateField("revision", e.target.value)}
                 placeholder="e.g., main, v1.0"
-                className="w-full px-3 py-2 bg-lb-bg text-lb-text text-sm shadow-border-thin
-                  focus:outline-none focus:shadow-border-medium placeholder:text-lb-text-muted"
+                className="w-full px-3 py-2.5 bg-lb-bg text-lb-text text-sm rounded-md
+                  border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                  focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted"
               />
             </div>
           )}
 
           {step === 4 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Weight Type
               </label>
               <div className="flex flex-wrap gap-sm">
@@ -249,11 +249,11 @@ export default function SubmitPage() {
                   <button
                     key={w}
                     onClick={() => updateField("weightType", w)}
-                    className={`px-4 py-2 text-sm font-medium transition-colors duration-150
+                    className={`px-4 py-2 text-sm font-medium rounded-md border transition-all duration-150
                       ${
                         form.weightType === w
-                          ? "bg-lb-primary text-white"
-                          : "bg-lb-bg text-lb-text-secondary shadow-border-thin hover:text-lb-text"
+                          ? "bg-lb-nav text-white border-lb-nav"
+                          : "bg-lb-bg text-lb-text-secondary border-lb-border hover:text-lb-text hover:border-lb-border-emphasis"
                       }
                     `}
                   >
@@ -266,7 +266,7 @@ export default function SubmitPage() {
 
           {step === 5 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Base Model (optional)
               </label>
               <input
@@ -274,15 +274,16 @@ export default function SubmitPage() {
                 value={form.baseModel}
                 onChange={(e) => updateField("baseModel", e.target.value)}
                 placeholder="e.g., meta-llama/Llama-2-7b"
-                className="w-full px-3 py-2 bg-lb-bg text-lb-text text-sm shadow-border-thin
-                  focus:outline-none focus:shadow-border-medium placeholder:text-lb-text-muted"
+                className="w-full px-3 py-2.5 bg-lb-bg text-lb-text text-sm rounded-md
+                  border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                  focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted"
               />
             </div>
           )}
 
           {step === 6 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-md">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-md">
                 Benchmark Scores
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
@@ -297,8 +298,9 @@ export default function SubmitPage() {
                       value={form.scores[b.id]}
                       onChange={(e) => updateScore(b.id, e.target.value)}
                       placeholder="0.0"
-                      className="flex-1 px-3 py-1.5 bg-lb-bg text-lb-text text-sm font-mono shadow-border-thin
-                        focus:outline-none focus:shadow-border-medium placeholder:text-lb-text-muted"
+                      className="flex-1 px-3 py-1.5 bg-lb-bg text-lb-text text-sm font-mono rounded-md
+                        border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                        focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted"
                     />
                   </div>
                 ))}
@@ -308,7 +310,7 @@ export default function SubmitPage() {
 
           {step === 7 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-sm">
+              <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
                 Commit Message
               </label>
               <textarea
@@ -316,21 +318,22 @@ export default function SubmitPage() {
                 onChange={(e) => updateField("commitMessage", e.target.value)}
                 placeholder="Brief description of the submission..."
                 rows={3}
-                className="w-full px-3 py-2 bg-lb-bg text-lb-text text-sm shadow-border-thin
-                  focus:outline-none focus:shadow-border-medium placeholder:text-lb-text-muted resize-none"
+                className="w-full px-3 py-2.5 bg-lb-bg text-lb-text text-sm rounded-md
+                  border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                  focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted resize-none"
               />
             </div>
           )}
 
           {step === 8 && (
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-lb-text-secondary mb-md">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-md">
                 Review Submission
               </h3>
               <div className="space-y-sm text-sm">
                 <div>
                   <span className="text-lb-text-muted">Model:</span>{" "}
-                  <span className="font-medium text-lb-text">{form.modelName}</span>
+                  <span className="font-semibold text-lb-text">{form.modelName}</span>
                 </div>
                 <div>
                   <span className="text-lb-text-muted">Type:</span>{" "}
@@ -367,8 +370,9 @@ export default function SubmitPage() {
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
-            className="px-4 py-2 text-sm font-medium bg-lb-surface shadow-border-thin
-              text-lb-text-secondary hover:text-lb-text transition-colors duration-150
+            className="px-4 py-2 text-sm font-medium bg-lb-surface border border-lb-border rounded-md
+              text-lb-text-secondary hover:text-lb-text hover:border-lb-border-emphasis
+              transition-all duration-150
               disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Back
@@ -377,7 +381,7 @@ export default function SubmitPage() {
             <button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canNext()}
-              className="px-4 py-2 text-sm font-medium bg-lb-primary text-white
+              className="px-4 py-2 text-sm font-medium bg-lb-nav text-white rounded-md
                 hover:opacity-90 transition-opacity duration-150
                 disabled:opacity-30 disabled:cursor-not-allowed"
             >
@@ -386,7 +390,7 @@ export default function SubmitPage() {
           ) : (
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 text-sm font-medium bg-lb-accent text-white
+              className="px-4 py-2 text-sm font-medium bg-lb-primary text-white rounded-md
                 hover:opacity-90 transition-opacity duration-150"
             >
               Generate JSON

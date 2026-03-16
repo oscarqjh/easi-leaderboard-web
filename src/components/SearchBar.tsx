@@ -13,8 +13,8 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         viewBox="0 0 24 24"
       >
         <path
-          strokeLinecap="square"
-          strokeLinejoin="miter"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           strokeWidth={2}
           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
         />
@@ -24,10 +24,10 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search models (comma-separated)..."
-        className="w-full pl-10 pr-3 py-2 bg-lb-surface text-lb-text text-sm
-          shadow-border-thin placeholder:text-lb-text-muted
-          focus:outline-none focus:shadow-border-medium focus:text-lb-primary
-          transition-shadow duration-150"
+        className="w-full pl-10 pr-3 py-2.5 bg-lb-bg text-lb-text text-sm rounded-md
+          border border-lb-border placeholder:text-lb-text-muted
+          focus:outline-none focus:border-lb-border-emphasis focus:ring-2 focus:ring-lb-primary-light
+          transition-all duration-200"
       />
     </div>
   );
