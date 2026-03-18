@@ -1,7 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Allow up to 30s for OAuth flow (token exchange + userinfo)
+export const maxDuration = 30;
+
 const HF_TOKEN_URL = "https://huggingface.co/oauth/token";
 const HF_USERINFO_URL = "https://huggingface.co/oauth/userinfo";
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 2
+): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+      return res;
+    } catch (err) {
+      if (i === retries) throw err;
+      // Wait 500ms before retry
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  throw new Error("Unreachable");
+}
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -21,8 +45,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Exchange code for token
-    const tokenRes = await fetch(HF_TOKEN_URL, {
+    // Exchange code for token (with retry for cold start timeouts)
+    const tokenRes = await fetchWithRetry(HF_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -45,8 +69,8 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
 
-    // Fetch user info
-    const userRes = await fetch(HF_USERINFO_URL, {
+    // Fetch user info (with retry)
+    const userRes = await fetchWithRetry(HF_USERINFO_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
