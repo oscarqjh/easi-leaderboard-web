@@ -313,6 +313,8 @@ export default function SubmitPage() {
   }, []);
 
   const updateScore = useCallback((id: string, value: string) => {
+    // Only allow digits, one decimal point, optional leading minus
+    if (value !== "" && !/^-?\d*\.?\d*$/.test(value)) return;
     setForm((prev) => ({
       ...prev,
       scores: { ...prev.scores, [id]: value },
@@ -787,8 +789,8 @@ export default function SubmitPage() {
                   {b.name}
                 </span>
                 <input
-                  type="number"
-                  step="0.1"
+                  type="text"
+                  inputMode="decimal"
                   value={form.scores[b.id]}
                   onChange={(e) => updateScore(b.id, e.target.value)}
                   disabled={!form.scoreEnabled[b.id]}
