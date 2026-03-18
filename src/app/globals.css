@@ -58,20 +58,131 @@
 .stagger-3 { animation-delay: 150ms; }
 .stagger-4 { animation-delay: 200ms; }
 .stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+.stagger-7 { animation-delay: 350ms; }
+.stagger-8 { animation-delay: 400ms; }
 
 /* ============================================================================
- * Reduced Motion
+ * Accordion
  * ============================================================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-delay: 0ms !important;
-    transition-duration: 0.01ms !important;
+@keyframes slideInFromLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.accordion-panel-reveal {
+  animation: slideInFromLeft 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.accordion-content-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-content-grid[data-expanded="true"] {
+  grid-template-rows: 1fr;
+}
+
+.accordion-content-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ============================================================================
+ * Bento Mosaic
+ * ============================================================================ */
+
+.bento-cell-mm { grid-area: mm; }
+.bento-cell-mr { grid-area: mr; }
+.bento-cell-sr { grid-area: sr; }
+.bento-cell-pt { grid-area: pt; }
+.bento-cell-da { grid-area: da; }
+.bento-cell-cr { grid-area: cr; }
+
+.bento-image-container {
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-image-container[data-revealed="true"] {
+  clip-path: circle(75% at 50% 50%);
+}
+
+.bento-overlay {
+  transform: translateY(100%);
+  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .bento-overlay,
+.group:focus-within .bento-overlay {
+  transform: translateY(0);
+}
+
+/* Responsive bento grid */
+.bento-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .bento-grid {
+    grid-template:
+      "mm mm" auto
+      "mr sr" auto
+      "pt da" auto
+      "cr cr" auto
+      / 1fr 1fr;
   }
 }
+
+@media (min-width: 1024px) {
+  .bento-grid {
+    grid-template:
+      "mm mm mr sr" auto
+      "pt da cr cr" auto
+      / 1fr 1fr 1fr 1fr;
+  }
+}
+
+/* ============================================================================
+ * Progressive Form
+ * ============================================================================ */
+
+.form-side-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 0.2em;
+  transition: opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hfPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.hf-pulse {
+  animation: hfPulse 1s infinite;
+}
+
+.section-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 500ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+}
+
+.section-reveal[data-visible="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.section-reveal-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
 
 /* ============================================================================
  * Scrollbar

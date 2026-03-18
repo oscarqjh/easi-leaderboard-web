@@ -13,9 +13,6 @@ export default function Footer() {
             LMMs-Lab
           </a>
         </span>
-        <span className="text-lb-text-muted">
-          Built with Next.js &middot; Data updated periodically
-        </span>
       </div>
     </footer>
   );

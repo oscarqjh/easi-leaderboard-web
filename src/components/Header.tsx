@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/about", label: "About" },
   { href: "/submit", label: "Submit" },
 ];
 
@@ -16,7 +15,7 @@ export default function Header() {
     <header className="bg-lb-surface border-b border-lb-border">
       <div className="max-w-7xl mx-auto px-md flex items-center justify-between h-14">
         <Link
-          href="/leaderboard"
+          href="/"
           className="font-heading font-semibold text-lg text-lb-text tracking-tight hover:opacity-70 transition-opacity duration-150"
         >
           EASI{" "}
