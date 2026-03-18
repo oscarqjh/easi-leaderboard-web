@@ -1,11 +1,11 @@
 export default function Footer() {
   return (
     <footer className="border-t border-lb-border bg-lb-surface py-lg px-md">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-sm text-sm text-lb-text-secondary">
+      <div className="max-w-7xl mx-auto text-center text-sm text-lb-text-secondary">
         <span>
           EASI Leaderboard &middot;{" "}
           <a
-            href="https://github.com/EvolvingLMMs-Lab"
+            href="https://www.lmms-lab.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2 decoration-lb-border hover:text-lb-primary transition-colors duration-150"
