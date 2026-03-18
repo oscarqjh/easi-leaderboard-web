@@ -197,6 +197,7 @@ export default function SubmitPage() {
   const [hfStatus, setHfStatus] = useState<"idle" | "checking" | "found" | "not-found">("idle");
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
   const [authError, setAuthError] = useState<string | null>(null);
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -229,6 +230,7 @@ export default function SubmitPage() {
       setAuthError(
         `Authentication failed (${authErrorParam})${detail ? `: ${detail}` : ""}. Please try again.`
       );
+      setLoggingIn(false);
       window.history.replaceState({}, "", "/submit");
       return;
     }
@@ -245,6 +247,7 @@ export default function SubmitPage() {
   }, []);
 
   const handleLogin = useCallback(() => {
+    setLoggingIn(true);
     const params = new URLSearchParams({
       client_id: HF_CLIENT_ID,
       redirect_uri: HF_REDIRECT_URI,
@@ -621,11 +624,25 @@ export default function SubmitPage() {
               )}
               <button
                 onClick={handleLogin}
-                className="inline-flex items-center max-w-[70%] mx-auto my-4 gap-2.5 px-5 py-2.5 bg-[#1e1b4b] text-white text-sm font-semibold rounded-lg
-                  hover:bg-[#312e81] transition-colors duration-150"
+                disabled={loggingIn}
+                className="inline-flex items-center justify-center max-w-[70%] mx-auto my-4 gap-2.5 px-5 py-2.5 bg-[#1e1b4b] text-white text-sm font-semibold rounded-lg
+                  hover:bg-[#312e81] transition-colors duration-150
+                  disabled:opacity-70 disabled:cursor-not-allowed min-w-[280px]"
               >
-                <HfLogo className="w-5 h-5" />
-                Authenticate with Hugging Face
+                {loggingIn ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    <HfLogo className="w-5 h-5" />
+                    Authenticate with Hugging Face
+                  </>
+                )}
               </button>
               <p className="text-xs text-lb-text-muted mt-2 mx-auto">
                 Authenticate so that we can identify you and your evaluation results.
