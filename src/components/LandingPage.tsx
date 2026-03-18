@@ -147,8 +147,6 @@ export default function LandingPage() {
               caps.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-            {/* Thin indigo accent line at the very top of the plate */}
-            <div className="h-[2px] w-full bg-lb-primary" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {CAPABILITIES.map((cap, i) => {
