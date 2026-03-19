@@ -41,7 +41,7 @@ export default function FilterBar({
       </div>
 
       {/* Precision toggle */}
-      <div className="flex items-center gap-sm">
+      {/* <div className="flex items-center gap-sm">
         <span className="text-xs font-semibold uppercase tracking-widest text-lb-text-muted">
           Precision
         </span>
@@ -62,7 +62,7 @@ export default function FilterBar({
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

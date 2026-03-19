@@ -5,6 +5,7 @@
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | [`/api/auth/callback`](#get-apiauthcallback) | GET | None | HuggingFace OAuth callback |
+| [`/api/leaderboard`](#get-apileaderboard) | GET | None (public) | Fetch latest leaderboard data |
 | [`/api/submit`](#post-apisubmit) | POST | Bearer token | Submit model evaluation results |
 
 ---
@@ -55,8 +56,8 @@ OAuth callback handler. Not called directly by clients — HuggingFace redirects
 
 ### Behavior
 
-1. Exchanges `code` for access token via `POST https://huggingface.co/oauth/token`
-2. Fetches user info via `GET https://huggingface.co/oauth/userinfo`
+1. Exchanges `code` for access token via `POST https://huggingface.co/oauth/token` (with retry: 2 attempts, 10s timeout)
+2. Fetches user info via `GET https://huggingface.co/oauth/userinfo` (with retry)
 3. Encodes user display data (`id`, `name`, `avatar`) and `accessToken` as base64url
 4. Redirects to `/submit?hf_user=<base64url>`
 
@@ -71,6 +72,82 @@ On failure, redirects to `/submit?auth_error=<code>&detail=<message>`.
 | `token_exchange` | HuggingFace rejected the authorization code (detail included) |
 | `userinfo` | Failed to fetch user profile from HuggingFace |
 | `unknown` | Unexpected server error |
+
+---
+
+## `GET /api/leaderboard`
+
+Fetch the latest leaderboard data from the private HuggingFace dataset repository. Public endpoint — no authentication required from the caller. The server uses `HF_UPLOAD_TOKEN` internally to access the private repo.
+
+### Behavior
+
+1. Lists files in `leaderboard/versions/` from `lmms-lab-si/EASI-Leaderboard-Results` (with retry: 3 attempts, 15s timeout, exponential backoff)
+2. Sorts by filename timestamp, picks the latest (e.g., `bench_20260214T040553.json`)
+3. Fetches and transforms the JSON to `ModelEntry[]` format (with retry)
+4. Returns cached data if less than 5 minutes old
+
+### Data Transformation
+
+The HF repo stores data as:
+```json
+{
+  "model_key": {
+    "config": { "model_name": "..." },
+    "results": { "vsi_bench": { "acc": 27.0 }, "site": { "caa": 33.14 } }
+  }
+}
+```
+
+The API transforms this to:
+```json
+{
+  "name": "model_key",
+  "type": "instruction",
+  "precision": "bfloat16",
+  "scores": { "vsi_bench": 27.0, "site": 33.14 }
+}
+```
+
+- `results.benchmark.acc` → `scores.benchmark_id` (uses `caa` for SITE)
+- Only includes benchmarks defined in the `BENCHMARKS` constant
+- `type` and `precision` default to `"instruction"` and `"bfloat16"` (until HF data includes these fields)
+
+### Caching
+
+In-memory cache with 5-minute TTL. Resets on server restart.
+
+### Success Response
+
+**Status:** `200`
+
+```json
+{
+  "data": [
+    {
+      "name": "qwen2.5_vl_3b_instruct",
+      "type": "instruction",
+      "precision": "bfloat16",
+      "scores": {
+        "vsi_bench": 27.0,
+        "mmsi_bench": 28.6,
+        "site": 33.14,
+        ...
+      }
+    }
+  ],
+  "lastUpdated": "2026-02-14T04:05:53Z"
+}
+```
+
+### Error Response
+
+**Status:** `502`
+
+```json
+{
+  "error": "Failed to load leaderboard data. Please try again later."
+}
+```
 
 ---
 
@@ -114,12 +191,10 @@ Authorization: Bearer <hf_access_token>
     "blink": null,
     "3dsrbench": null,
     "embspatial": null,
-    "dsrbench": null,
-    "eriq": null,
-    "erqa": null,
-    "robospatialhome": null,
-    "sti_bench": null,
-    "muirbench": null
+    "mmsi_video_bench": null,
+    "omnispatial_(manual_cot)": null,
+    "spar_bench": null,
+    "vsi_debiased": null
   },
   "remarks": "Initial submission"
 }
@@ -142,22 +217,27 @@ Authorization: Bearer <hf_access_token>
 
 Scores use the following benchmark IDs as keys:
 
-| ID | Display Name | Metric | EASI-8 |
-|----|-------------|--------|--------|
-| `vsi_bench` | VSI-Bench | Acc. | Yes |
-| `mmsi_bench` | MMSI-Bench | Acc. | Yes |
-| `mindcube_tiny` | MindCube-Tiny | Acc. | Yes |
-| `viewspatial` | ViewSpatial | Acc. | Yes |
-| `site` | SITE | CAA | Yes |
-| `blink` | BLINK | Acc. | Yes |
-| `3dsrbench` | 3DSRBench | Acc. | Yes |
-| `embspatial` | EmbSpatial | Acc. | Yes |
-| `dsrbench` | DSRBench | Acc. | No |
-| `eriq` | ERIQ | Acc. | No |
-| `erqa` | ERQA | Acc. | No |
-| `robospatialhome` | RoboSpatialHome | Acc. | No |
-| `sti_bench` | STI-Bench | Acc. | No |
-| `muirbench` | MUIRBench | Acc. | No |
+**EASI-8 (core):**
+
+| ID | Display Name | Metric |
+|----|-------------|--------|
+| `vsi_bench` | VSI-Bench | Acc. |
+| `mmsi_bench` | MMSI-Bench | Acc. |
+| `mindcube_tiny` | MindCube-Tiny | Acc. |
+| `viewspatial` | ViewSpatial | Acc. |
+| `site` | SITE | CAA |
+| `blink` | BLINK | Acc. |
+| `3dsrbench` | 3DSRBench | Acc. |
+| `embspatial` | EmbSpatial | Acc. |
+
+**Additional:**
+
+| ID | Display Name | Metric |
+|----|-------------|--------|
+| `mmsi_video_bench` | MMSI-Video-Bench | Acc. |
+| `omnispatial_(manual_cot)` | OmniSpatial (Manual CoT) | Acc. |
+| `spar_bench` | SPAR-Bench | Acc. |
+| `vsi_debiased` | VSI-Debiased | Acc. |
 
 A `null` value means the benchmark was not evaluated. A `0` value means evaluated with a score of zero.
 
@@ -220,7 +300,7 @@ Checks are executed in this order. The first failure short-circuits the request.
 
 ## Submission File Format
 
-Each submission creates a JSON file in the HuggingFace dataset repository.
+Each submission creates a JSON file in the HuggingFace dataset repository (`lmms-lab-si/EASI-Leaderboard-Requests`).
 
 ### File Path
 
@@ -337,8 +417,9 @@ curl -X POST https://easi.lmms-lab.com/api/submit \
 | `HF_CLIENT_ID` | Yes | Server | HuggingFace OAuth app client ID |
 | `HF_CLIENT_SECRET` | Yes | Server | HuggingFace OAuth app client secret |
 | `HF_REDIRECT_URI` | No | Server | OAuth callback URL. Defaults to `{origin}/api/auth/callback` |
-| `HF_UPLOAD_TOKEN` | Yes | Server | HF token with write access to the dataset repo |
-| `HF_REQUESTS_REPO` | No | Server | Dataset repo ID. Defaults to `lmms-lab-si/EASI-Leaderboard-Requests` |
+| `HF_UPLOAD_TOKEN` | Yes | Server | HF token with read/write access to the dataset repos |
+| `HF_REQUESTS_REPO` | No | Server | Submissions repo. Defaults to `lmms-lab-si/EASI-Leaderboard-Requests` |
+| `HF_RESULTS_REPO` | No | Server | Leaderboard results repo. Defaults to `lmms-lab-si/EASI-Leaderboard-Results` |
 | `NEXT_PUBLIC_HF_CLIENT_ID` | Yes | Client | Same client ID, exposed to browser for authorize URL |
 | `NEXT_PUBLIC_HF_REDIRECT_URI` | No | Client | Redirect URI for client-side authorize URL |
 
@@ -350,6 +431,7 @@ HF_CLIENT_SECRET=your-client-secret
 NEXT_PUBLIC_HF_CLIENT_ID=058e6b15-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 HF_UPLOAD_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxx
 HF_REQUESTS_REPO=lmms-lab-si/EASI-Leaderboard-Requests
+HF_RESULTS_REPO=lmms-lab-si/EASI-Leaderboard-Results
 NEXT_PUBLIC_HF_REDIRECT_URI=http://localhost:3000/api/auth/callback
 ```
 
