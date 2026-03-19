@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ModelEntry, FilterState, Protocol, Precision, SortDirection } from "@/lib/types";
+import { useState, useMemo, useCallback } from "react";
+import { ModelEntry, FilterState, Protocol, Precision } from "@/lib/types";
 import { EASI8_IDS } from "@/lib/constants";
 import {
   filterBySearch,
@@ -17,7 +17,6 @@ import FilterBar from "./FilterBar";
 import ColumnSelector from "./ColumnSelector";
 import BarChart from "./BarChart";
 import LeaderboardTable from "./LeaderboardTable";
-import ExportButton from "./ExportButton";
 
 interface OverviewClientProps {
   data: ModelEntry[];
@@ -29,6 +28,7 @@ export default function OverviewClient({ data }: OverviewClientProps) {
     precision: "all",
     protocol: "EASI-8",
     visibleColumns: [...EASI8_IDS],
+    expandedColumns: [],
     sortColumn: "average",
     sortDirection: "desc",
   });
@@ -46,6 +46,7 @@ export default function OverviewClient({ data }: OverviewClientProps) {
       ...prev,
       protocol,
       visibleColumns: columns,
+      expandedColumns: prev.expandedColumns.filter((c) => columns.includes(c)),
     }));
   };
 
@@ -59,6 +60,16 @@ export default function OverviewClient({ data }: OverviewClientProps) {
           : "desc",
     }));
   };
+
+  // Check if any model has sub-scores for a given benchmark
+  const hasSubScores = useCallback(
+    (benchId: string) => {
+      return data.some(
+        (m) => m.subScores && m.subScores[benchId] && Object.keys(m.subScores[benchId]).length > 0
+      );
+    },
+    [data]
+  );
 
   const rankedModels = useMemo(() => {
     let result = filterBySearch(data, filters.search);
@@ -89,7 +100,10 @@ export default function OverviewClient({ data }: OverviewClientProps) {
         />
         <ColumnSelector
           visibleColumns={filters.visibleColumns}
+          expandedColumns={filters.expandedColumns}
           onChange={(v) => updateFilter("visibleColumns", v)}
+          onExpandedChange={(v) => updateFilter("expandedColumns", v)}
+          hasSubScores={hasSubScores}
         />
       </div>
 
@@ -97,12 +111,10 @@ export default function OverviewClient({ data }: OverviewClientProps) {
       <BarChart models={rankedModels} />
 
       {/* Table */}
-      {/* <div className="flex justify-end relative z-20">
-        <ExportButton models={rankedModels} visibleColumns={filters.visibleColumns} />
-      </div> */}
       <LeaderboardTable
         models={rankedModels}
         visibleColumns={filters.visibleColumns}
+        expandedColumns={filters.expandedColumns}
         bestScores={bestScores}
         sortColumn={filters.sortColumn}
         sortDirection={filters.sortDirection}

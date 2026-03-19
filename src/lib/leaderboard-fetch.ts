@@ -44,9 +44,16 @@ interface HfFileEntry {
   type: string;
 }
 
+interface HfBenchResult {
+  acc?: number;
+  caa?: number;
+  sub_scores?: Record<string, number>;
+  [key: string]: unknown;
+}
+
 interface HfModelData {
   config?: { model_name?: string; model_key?: string; model_display_name?: string; link?: string };
-  results: Record<string, Record<string, number>>;
+  results: Record<string, HfBenchResult>;
 }
 
 function transformData(raw: Record<string, HfModelData>): ModelEntry[] {
@@ -54,14 +61,19 @@ function transformData(raw: Record<string, HfModelData>): ModelEntry[] {
     const name = entry.config?.model_name || key;
 
     const scores: Record<string, number | null> = {};
+    const subScores: Record<string, Record<string, number>> = {};
+
     for (const benchId of benchmarkIds) {
       const result = entry.results[benchId];
       if (!result) {
         scores[benchId] = null;
         continue;
       }
-      // Use 'acc' for most benchmarks, 'caa' for SITE
       scores[benchId] = result.acc ?? result.caa ?? null;
+
+      if (result.sub_scores && Object.keys(result.sub_scores).length > 0) {
+        subScores[benchId] = result.sub_scores;
+      }
     }
 
     return {
@@ -71,6 +83,7 @@ function transformData(raw: Record<string, HfModelData>): ModelEntry[] {
       type: "instruction" as const,
       precision: "bfloat16" as const,
       scores,
+      subScores: Object.keys(subScores).length > 0 ? subScores : undefined,
     };
   });
 }

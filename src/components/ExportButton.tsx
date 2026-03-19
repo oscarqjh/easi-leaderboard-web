@@ -8,9 +8,10 @@ import { exportCsv, exportJsonl, exportLatex, downloadFile } from "@/lib/export"
 interface ExportButtonProps {
   models: RankedModel[];
   visibleColumns: string[];
+  expandedColumns?: string[];
 }
 
-export default function ExportButton({ models, visibleColumns }: ExportButtonProps) {
+export default function ExportButton({ models, visibleColumns, expandedColumns = [] }: ExportButtonProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -29,17 +30,17 @@ export default function ExportButton({ models, visibleColumns }: ExportButtonPro
       setOpen(false);
       switch (format) {
         case "csv":
-          downloadFile(exportCsv(models, visibleColumns), "easi-leaderboard.csv", "text/csv");
+          downloadFile(exportCsv(models, visibleColumns, expandedColumns), "easi-leaderboard.csv", "text/csv");
           break;
         case "jsonl":
-          downloadFile(exportJsonl(models, visibleColumns), "easi-leaderboard.jsonl", "application/jsonl");
+          downloadFile(exportJsonl(models, visibleColumns, expandedColumns), "easi-leaderboard.jsonl", "application/jsonl");
           break;
         case "latex":
-          downloadFile(exportLatex(models, visibleColumns), "easi-leaderboard.tex", "application/x-tex");
+          downloadFile(exportLatex(models, visibleColumns, expandedColumns), "easi-leaderboard.tex", "application/x-tex");
           break;
       }
     },
-    [models, visibleColumns]
+    [models, visibleColumns, expandedColumns]
   );
 
   const options = [

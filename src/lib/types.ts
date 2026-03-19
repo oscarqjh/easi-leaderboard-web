@@ -17,6 +17,7 @@ export interface ModelEntry {
   type: ModelType;
   precision: Precision;
   scores: Record<string, number | null>;
+  subScores?: Record<string, Record<string, number>>;
 }
 
 export interface FilterState {
@@ -24,6 +25,7 @@ export interface FilterState {
   precision: Precision | "all";
   protocol: Protocol;
   visibleColumns: string[];
+  expandedColumns: string[];
   sortColumn: string;
   sortDirection: SortDirection;
 }
