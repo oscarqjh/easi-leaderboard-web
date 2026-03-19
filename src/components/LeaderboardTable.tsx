@@ -131,7 +131,7 @@ export default function LeaderboardTable({
                     <th
                       key={colId}
                       colSpan={subKeys.length}
-                      className="px-4 py-2 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap text-lb-primary bg-lb-bg border-b border-lb-border"
+                      className="px-4 py-2 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap text-lb-primary bg-lb-bg border-b border-lb-border border-l-2 border-l-lb-border-emphasis"
                     >
                       {meta?.name ?? colId}
                     </th>
@@ -183,14 +183,14 @@ export default function LeaderboardTable({
               const isExpanded = expandedColumns.includes(colId) && subKeys.length > 0;
 
               if (isExpanded) {
-                return subKeys.map((subKey) => {
+                return subKeys.map((subKey, subIdx) => {
                   const sortId = `${colId}:${subKey}`;
                   return (
                     <th
                       key={sortId}
                       className={`px-3 py-2 text-right font-medium text-[10px] tracking-normal whitespace-nowrap cursor-pointer transition-colors duration-150 bg-lb-surface ${
                         sortColumn === sortId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
-                      }`}
+                      } ${subIdx === 0 ? "border-l-2 border-l-lb-border-emphasis" : ""}`}
                       onClick={() => onSort(sortId)}
                     >
                       {formatSubKey(subKey)}
