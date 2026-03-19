@@ -21,7 +21,6 @@ const BENCHMARK_DETAILS: Record<string, string> = {
 
 export default function LandingPage() {
   const hero = useReveal();
-  const stats = useReveal();
   const caps = useReveal();
   const bench = useReveal();
   const cite = useReveal();
@@ -47,7 +46,7 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <section
         ref={hero.ref}
-        className={`relative overflow-hidden bg-lb-bg pt-16 pb-20 px-md transition-all duration-700 ease-out ${
+        className={`relative overflow-hidden bg-lb-bg pt-20 pb-24 px-md transition-all duration-700 ease-out ${
           hero.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
@@ -89,36 +88,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats Bar ── */}
-      <section
-        ref={stats.ref}
-        className={`bg-lb-surface border-y border-lb-border py-8 px-md transition-all duration-700 ease-out delay-100 ${
-          stats.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        }`}
-      >
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: "8", label: "Benchmarks" },
-            { value: "23+", label: "Models" },
-            { value: "24K+", label: "QA Pairs" },
-            { value: "~31K", label: "Images" },
-          ].map((s) => (
-            <div key={s.label}>
-              <div className="font-heading text-2xl md:text-3xl font-bold text-lb-primary">
-                {s.value}
-              </div>
-              <div className="text-xs font-semibold tracking-widest uppercase text-lb-text-muted mt-1">
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── Six Capabilities — Specimen Atlas ── */}
       <section
         ref={caps.ref}
-        className="relative bg-lb-bg py-20 px-md overflow-hidden"
+        className="relative bg-lb-surface py-20 px-md overflow-hidden"
       >
         {/* Faint dot-grid background — evokes graph paper / technical drawing */}
         <div
@@ -131,8 +104,6 @@ export default function LandingPage() {
         />
 
         <div className="relative max-w-6xl mx-auto">
-          {/* Section label — small, precise, like a figure reference */}
-
           <h2 className="font-heading text-heading font-semibold text-lb-text text-center mb-2">
             Taxonomy of Spatial Capabilities
           </h2>
@@ -141,13 +112,12 @@ export default function LandingPage() {
             that structure the EASI evaluation framework.
           </p>
 
-          {/* The plate — single white container */}
+          {/* The plate — single container */}
           <div
             className={`bg-lb-surface rounded-xl border border-lb-border shadow-lg overflow-hidden transition-all duration-800 ease-out ${
               caps.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {CAPABILITIES.map((cap, i) => {
                 const numeral = String(i + 1).padStart(2, "0");
@@ -188,7 +158,7 @@ export default function LandingPage() {
                         </span>
                       </div>
 
-                      {/* Illustration — large, centered, breathing room */}
+                      {/* Illustration */}
                       <div className="relative w-full aspect-square max-w-[190px] mx-auto mb-6 bg-white rounded-lg">
                         <Image
                           src={`/${cap.abbr}.png`}
@@ -215,14 +185,13 @@ export default function LandingPage() {
               })}
             </div>
           </div>
-
         </div>
       </section>
 
       {/* ── Benchmarks Grid ── */}
       <section
         ref={bench.ref}
-        className={`bg-lb-surface py-16 px-md transition-all duration-700 ease-out ${
+        className={`bg-lb-bg py-16 px-md transition-all duration-700 ease-out ${
           bench.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
@@ -237,7 +206,7 @@ export default function LandingPage() {
             {EASI8_BENCHMARKS.map((b, i) => (
               <div
                 key={b.id}
-                className={`border border-lb-border rounded-lg p-4 bg-lb-bg hover:shadow-md transition-all duration-500 ease-out ${
+                className={`border border-lb-border rounded-lg p-4 bg-lb-surface hover:shadow-md transition-all duration-500 ease-out ${
                   bench.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
                 }`}
                 style={{
@@ -264,7 +233,7 @@ export default function LandingPage() {
       {/* ── Citation ── */}
       <section
         ref={cite.ref}
-        className={`bg-lb-bg py-16 px-md transition-all duration-700 ease-out ${
+        className={`bg-lb-surface py-16 px-md transition-all duration-700 ease-out ${
           cite.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
@@ -272,7 +241,7 @@ export default function LandingPage() {
           <h2 className="font-heading text-subheading font-semibold text-lb-text text-center mb-6">
             Citation
           </h2>
-          <div className="relative bg-lb-surface border border-lb-border rounded-lg shadow-sm p-md">
+          <div className="relative bg-lb-bg border border-lb-border rounded-lg shadow-sm p-md">
             <pre className="font-mono text-xs text-lb-text overflow-x-auto whitespace-pre leading-relaxed">
               {citation}
             </pre>
@@ -289,7 +258,7 @@ export default function LandingPage() {
       {/* ── Links ── */}
       <section
         ref={links.ref}
-        className={`bg-lb-surface border-t border-lb-border py-12 px-md transition-all duration-700 ease-out ${
+        className={`bg-lb-bg border-t border-lb-border py-12 px-md transition-all duration-700 ease-out ${
           links.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
@@ -327,7 +296,7 @@ export default function LandingPage() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-5 py-3 bg-lb-bg border border-lb-border rounded-lg text-sm font-medium text-lb-text-secondary hover:border-lb-border-emphasis hover:text-lb-text hover:shadow-md transition-all duration-150 focus-ring"
+                className="flex items-center gap-2 px-5 py-3 bg-lb-surface border border-lb-border rounded-lg text-sm font-medium text-lb-text-secondary hover:border-lb-border-emphasis hover:text-lb-text hover:shadow-md transition-all duration-150 focus-ring"
               >
                 {link.icon}
                 {link.label}
