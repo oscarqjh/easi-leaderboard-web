@@ -183,14 +183,21 @@ export default function LeaderboardTable({
               const isExpanded = expandedColumns.includes(colId) && subKeys.length > 0;
 
               if (isExpanded) {
-                return subKeys.map((subKey) => (
-                  <th
-                    key={`${colId}-${subKey}`}
-                    className="px-3 py-2 text-right font-medium text-[10px] tracking-normal whitespace-nowrap text-lb-text-muted bg-lb-surface"
-                  >
-                    {formatSubKey(subKey)}
-                  </th>
-                ));
+                return subKeys.map((subKey) => {
+                  const sortId = `${colId}:${subKey}`;
+                  return (
+                    <th
+                      key={sortId}
+                      className={`px-3 py-2 text-right font-medium text-[10px] tracking-normal whitespace-nowrap cursor-pointer transition-colors duration-150 bg-lb-surface ${
+                        sortColumn === sortId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
+                      }`}
+                      onClick={() => onSort(sortId)}
+                    >
+                      {formatSubKey(subKey)}
+                      <SortArrow column={sortId} sortColumn={sortColumn} sortDirection={sortDirection} />
+                    </th>
+                  );
+                });
               }
 
               if (hasAnyExpanded) return null; // already rendered in row 1 with rowSpan=2

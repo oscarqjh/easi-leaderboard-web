@@ -52,6 +52,11 @@ export function sortModels(
     if (column === "average") {
       aVal = a.average;
       bVal = b.average;
+    } else if (column.includes(":")) {
+      // Sub-score sort: "benchId:subKey"
+      const [benchId, subKey] = column.split(":", 2);
+      aVal = a.subScores?.[benchId]?.[subKey] ?? null;
+      bVal = b.subScores?.[benchId]?.[subKey] ?? null;
     } else {
       aVal = a.scores[column] ?? null;
       bVal = b.scores[column] ?? null;
