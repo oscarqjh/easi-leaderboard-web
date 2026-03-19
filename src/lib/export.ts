@@ -11,7 +11,7 @@ export function exportCsv(models: RankedModel[], columns: string[]): string {
   const header = ["Rank", "Model", "Type", "Precision", "Avg", ...columns.map((c) => benchmarkMap.get(c) ?? c)];
   const rows = models.map((m) => [
     m.rank,
-    m.name,
+    m.displayName || m.name,
     m.type,
     m.precision,
     formatScore(m.average),
@@ -30,7 +30,7 @@ export function exportJsonl(models: RankedModel[], columns: string[]): string {
       }
       return JSON.stringify({
         rank: m.rank,
-        model: m.name,
+        model: m.displayName || m.name,
         type: m.type,
         precision: m.precision,
         average: m.average,
@@ -61,7 +61,8 @@ export function exportLatex(models: RankedModel[], columns: string[]): string {
 
   const rows = models.map((m) => {
     const scores = columns.map((c) => formatScore(m.scores[c] ?? null));
-    return `${m.rank} & ${m.name.replace(/_/g, "\\_")} & ${formatScore(m.average)} & ${scores.join(" & ")} \\\\`;
+    const displayName = (m.displayName || m.name).replace(/_/g, "\\_");
+    return `${m.rank} & ${displayName} & ${formatScore(m.average)} & ${scores.join(" & ")} \\\\`;
   });
 
   const footer = [

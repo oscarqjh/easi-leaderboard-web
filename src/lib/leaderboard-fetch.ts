@@ -45,7 +45,7 @@ interface HfFileEntry {
 }
 
 interface HfModelData {
-  config?: { model_name?: string; model_key?: string };
+  config?: { model_name?: string; model_key?: string; model_display_name?: string; link?: string };
   results: Record<string, Record<string, number>>;
 }
 
@@ -66,6 +66,8 @@ function transformData(raw: Record<string, HfModelData>): ModelEntry[] {
 
     return {
       name,
+      displayName: entry.config?.model_display_name || undefined,
+      link: entry.config?.link || undefined,
       type: "instruction" as const,
       precision: "bfloat16" as const,
       scores,

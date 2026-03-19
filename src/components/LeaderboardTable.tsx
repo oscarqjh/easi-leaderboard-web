@@ -109,10 +109,18 @@ export default function LeaderboardTable({
                 <RankBadge rank={model.rank} />
               </td>
               <td className={`sticky left-12 z-10 px-4 py-3 whitespace-nowrap ${i % 2 === 1 ? "bg-[#faf9fb]" : "bg-lb-surface"}`}>
-                <span className="font-semibold text-lb-text">{model.name}</span>
-                <span className="ml-2 text-xs text-lb-text-muted px-1.5 py-0.5 bg-lb-bg rounded">
-                  {model.precision}
-                </span>
+                {model.link ? (
+                  <a
+                    href={model.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-lb-text hover:text-lb-primary transition-colors duration-150"
+                  >
+                    {model.displayName || model.name}
+                  </a>
+                ) : (
+                  <span className="font-semibold text-lb-text">{model.displayName || model.name}</span>
+                )}
               </td>
               <td className="px-4 py-3 text-right">
                 <span

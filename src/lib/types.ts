@@ -12,6 +12,8 @@ export interface BenchmarkMeta {
 
 export interface ModelEntry {
   name: string;
+  displayName?: string;
+  link?: string;
   type: ModelType;
   precision: Precision;
   scores: Record<string, number | null>;
