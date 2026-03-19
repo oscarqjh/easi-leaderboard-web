@@ -17,6 +17,7 @@ import FilterBar from "./FilterBar";
 import ColumnSelector from "./ColumnSelector";
 import BarChart from "./BarChart";
 import LeaderboardTable from "./LeaderboardTable";
+import ExportButton from "./ExportButton";
 
 interface OverviewClientProps {
   data: ModelEntry[];
@@ -96,6 +97,9 @@ export default function OverviewClient({ data }: OverviewClientProps) {
       <BarChart models={rankedModels} />
 
       {/* Table */}
+      <div className="flex justify-end relative z-20">
+        <ExportButton models={rankedModels} visibleColumns={filters.visibleColumns} />
+      </div>
       <LeaderboardTable
         models={rankedModels}
         visibleColumns={filters.visibleColumns}
