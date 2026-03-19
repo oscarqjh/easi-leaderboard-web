@@ -97,9 +97,9 @@ export default function OverviewClient({ data }: OverviewClientProps) {
       <BarChart models={rankedModels} />
 
       {/* Table */}
-      <div className="flex justify-end relative z-20">
+      {/* <div className="flex justify-end relative z-20">
         <ExportButton models={rankedModels} visibleColumns={filters.visibleColumns} />
-      </div>
+      </div> */}
       <LeaderboardTable
         models={rankedModels}
         visibleColumns={filters.visibleColumns}

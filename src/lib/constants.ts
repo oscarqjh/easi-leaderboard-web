@@ -48,12 +48,10 @@ export const BENCHMARKS: BenchmarkMeta[] = [
   { id: "blink", name: "BLINK", metric: "Acc.", isEasi8: true },
   { id: "3dsrbench", name: "3DSRBench", metric: "Acc.", isEasi8: true },
   { id: "embspatial", name: "EmbSpatial", metric: "Acc.", isEasi8: true },
-  { id: "dsrbench", name: "DSRBench", metric: "Acc.", isEasi8: false },
-  { id: "eriq", name: "ERIQ", metric: "Acc.", isEasi8: false },
-  { id: "erqa", name: "ERQA", metric: "Acc.", isEasi8: false },
-  { id: "robospatialhome", name: "RoboSpatialHome", metric: "Acc.", isEasi8: false },
-  { id: "sti_bench", name: "STI-Bench", metric: "Acc.", isEasi8: false },
-  { id: "muirbench", name: "MUIRBench", metric: "Acc.", isEasi8: false },
+  { id: "mmsi_video_bench", name: "MMSI-Video-Bench", metric: "Acc.", isEasi8: false },
+  { id: "omnispatial_(manual_cot)", name: "OmniSpatial (Manual CoT)", metric: "Acc.", isEasi8: false },
+  { id: "spar_bench", name: "SPAR-Bench", metric: "Acc.", isEasi8: false },
+  { id: "vsi_debiased", name: "VSI-Debiased", metric: "Acc.", isEasi8: false },
 ];
 
 export const EASI8_IDS = BENCHMARKS.filter((b) => b.isEasi8).map((b) => b.id);

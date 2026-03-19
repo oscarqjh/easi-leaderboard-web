@@ -18,7 +18,7 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
     <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm p-md">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-sm text-xs font-semibold uppercase tracking-widest text-lb-text-muted hover:text-lb-text-secondary transition-colors duration-150 mb-md"
+        className="flex items-center gap-sm text-xs font-semibold uppercase tracking-widest text-lb-text-muted hover:text-lb-text-secondary transition-colors duration-150"
       >
         <svg
           className={`w-3 h-3 transition-transform duration-200 ${
@@ -33,7 +33,7 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
       </button>
 
       {!collapsed && (
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 mt-md">
           {displayed.map((model, i) => {
             const pct =
               model.average !== null && maxScore > 0
