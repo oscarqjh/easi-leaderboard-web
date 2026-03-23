@@ -260,7 +260,15 @@ export default function ApiDocsPage() {
     "revision": "main",
     "weightType": "Original",
     "baseModel": "",
-    "scores": {"vsi_bench": 72.4, "site": 0},
+    "backend": "vlmevalkit",
+    "scores": {"vsi_bench": 27.0, "mmsi_bench": 28.6},
+    "subScores": {
+      "vsi_bench": {
+        "obj_appearance_order_accuracy": 25.3,
+        "object_abs_distance": 18.7,
+        "object_counting": null
+      }
+    },
     "remarks": "Submitted via cURL"
   }'`}</CodeBlock>
 
@@ -274,10 +282,19 @@ export default function ApiDocsPage() {
               ["`revision`", "string", "No", "Model revision. Defaults to \"main\""],
               ["`weightType`", "string", "No", "Original | Delta | Adapter"],
               ["`baseModel`", "string", "Conditional", "Required for Delta/Adapter weights"],
+              ["`backend`", "string", "Yes", "vlmevalkit | lmmseval | others"],
               ["`scores`", "object", "Yes", "Benchmark ID → number or null"],
+              ["`subScores`", "object", "No", "Benchmark ID → { sub_key → number or null }"],
               ["`remarks`", "string", "No", "Free-text notes"],
             ]}
           />
+
+          <H3>Sub-Scores</H3>
+          <P>
+            Each benchmark has a set of sub-score keys. The <Code>subScores</Code> field is optional — only include benchmarks
+            where at least one sub-score is filled. Unfilled sub-scores within an included benchmark should be <Code>null</Code>.
+            See the benchmark sub-score keys in the submit form for the full mapping.
+          </P>
 
           <H3>Benchmark IDs</H3>
           <P>EASI-8 (core):</P>
@@ -366,10 +383,18 @@ response = requests.post(
         "revision": "main",
         "weightType": "Original",
         "baseModel": "",
+        "backend": "vlmevalkit",
         "scores": {
-            "vsi_bench": 72.4,
+            "vsi_bench": 27.0,
             "mmsi_bench": None,   # null = not evaluated
             "site": 0,            # 0 = scored zero
+        },
+        "subScores": {
+            "vsi_bench": {
+                "obj_appearance_order_accuracy": 25.3,
+                "object_abs_distance": 18.7,
+                "object_counting": None,
+            },
         },
         "remarks": "Submitted via script",
     },
@@ -392,7 +417,9 @@ else:
     "revision": "main",
     "weightType": "Original",
     "baseModel": "",
-    "scores": {"vsi_bench": 72.4},
+    "backend": "vlmevalkit",
+    "scores": {"vsi_bench": 27.0},
+    "subScores": {"vsi_bench": {"object_counting": 30.2}},
     "remarks": "Submitted via cURL"
   }'`}</CodeBlock>
         </Section>

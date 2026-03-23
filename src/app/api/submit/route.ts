@@ -16,7 +16,9 @@ interface SubmitPayload {
   revision: string;
   weightType: string;
   baseModel: string;
+  backend: string;
   scores: Record<string, number | null>;
+  subScores?: Record<string, Record<string, number | null>>;
   remarks: string;
 }
 
@@ -158,11 +160,13 @@ export async function POST(request: NextRequest) {
     model_sha: revision,
     model_dtype: body.precision,
     weight_type: body.weightType || "Original",
+    backend: body.backend || "others",
     model_type: body.modelType,
     submit_time: submitTime,
     remarks: body.remarks || "Submitted via EASI Leaderboard",
     config: {},
     results: body.scores,
+    sub_scores: body.subScores || {},
   };
 
   const fileContent = JSON.stringify(submissionContent, null, 2);

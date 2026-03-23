@@ -1,8 +1,23 @@
 import { useMemo } from "react";
-import { RankedModel, SortDirection } from "@/lib/types";
+import { RankedModel, SortDirection, Backend } from "@/lib/types";
 import { BENCHMARKS } from "@/lib/constants";
 import ScoreCell from "./ScoreCell";
 import RankBadge from "./RankBadge";
+
+const BACKEND_STYLES: Record<Backend, { label: string; className: string }> = {
+  vlmevalkit: { label: "VLMEvalKit", className: "bg-lb-primary-light text-lb-primary border-lb-primary-muted" },
+  lmmseval: { label: "LMMsEval", className: "bg-lb-bg text-lb-primary border-lb-border-emphasis" },
+  others: { label: "Other", className: "bg-lb-bg text-lb-text-muted border-lb-border" },
+};
+
+function BackendBadge({ backend }: { backend: Backend }) {
+  const style = BACKEND_STYLES[backend] ?? BACKEND_STYLES.others;
+  return (
+    <span className={`ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded border ${style.className}`}>
+      {style.label}
+    </span>
+  );
+}
 
 interface LeaderboardTableProps {
   models: RankedModel[];
@@ -243,6 +258,9 @@ export default function LeaderboardTable({
                   </a>
                 ) : (
                   <span className="font-semibold text-lb-text">{model.displayName || model.name}</span>
+                )}
+                {model.backend && (
+                  <BackendBadge backend={model.backend} />
                 )}
               </td>
               <td className="px-4 py-3 text-right">

@@ -10,10 +10,13 @@ export interface BenchmarkMeta {
   isEasi8: boolean;
 }
 
+export type Backend = "vlmevalkit" | "lmmseval" | "others";
+
 export interface ModelEntry {
   name: string;
   displayName?: string;
   link?: string;
+  backend?: Backend;
   type: ModelType;
   precision: Precision;
   scores: Record<string, number | null>;

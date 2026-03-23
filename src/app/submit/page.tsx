@@ -18,8 +18,11 @@ interface FormData {
   revision: string;
   weightType: string;
   baseModel: string;
+  backend: string;
   scores: Record<string, string>;
   scoreEnabled: Record<string, boolean>;
+  subScores: Record<string, Record<string, string>>;
+  subScoresExpanded: Record<string, boolean>;
   remarks: string;
 }
 
@@ -32,7 +35,9 @@ interface SubmitPayload {
   revision: string;
   weightType: string;
   baseModel: string;
+  backend: string;
   scores: Record<string, number | null>;
+  subScores: Record<string, Record<string, number | null>>;
   remarks: string;
 }
 
@@ -43,6 +48,32 @@ interface SectionConfig {
 }
 
 /* ── Constants ── */
+
+const BENCHMARK_SUB_SCORES: Record<string, { mainKey: string; subKeys: string[] }> = {
+  "3dsrbench": { mainKey: "acc", subKeys: ["height_higher", "location_above", "location_closer_to_camera", "location_next_to", "multi_object_closer_to", "multi_object_facing", "multi_object_parallel", "multi_object_same_direction", "multi_object_viewpoint_towards_object", "orientation_in_front_of", "orientation_on_the_left", "orientation_viewpoint"] },
+  "blink": { mainKey: "acc", subKeys: ["art_style", "counting", "forensic_detection", "functional_correspondence", "iq_test", "jigsaw", "multi_view_reasoning", "object_localization", "relative_depth", "relative_reflectance", "semantic_correspondence", "spatial_relation", "visual_correspondence", "visual_similarity"] },
+  "embspatial": { mainKey: "acc", subKeys: ["ai2thor_accuracy", "mp3d_accuracy", "scannet_accuracy"] },
+  "mindcube_tiny": { mainKey: "acc", subKeys: ["among_accuracy", "around_accuracy", "rotation_accuracy"] },
+  "mmsi_bench": { mainKey: "acc", subKeys: ["attr_appr_accuracy", "attr_meas_accuracy", "motion_cam_accuracy", "motion_obj_accuracy", "msr_accuracy", "pos_cam_cam_accuracy", "pos_cam_obj_accuracy", "pos_cam_reg_accuracy", "pos_obj_obj_accuracy", "pos_obj_reg_accuracy", "pos_reg_reg_accuracy"] },
+  "mmsi_video_bench": { mainKey: "acc", subKeys: ["cross_video_accuracy", "motion_understanding_accuracy", "planning_accuracy", "prediction_accuracy", "spatial_construction_accuracy"] },
+  "omnispatial_(manual_cot)": { mainKey: "acc", subKeys: ["allocentric_accuracy", "egocentric_accuracy", "geometric_reasoning_accuracy", "geospatial_strategy_accuracy", "hypothetical_accuracy", "localization_accuracy", "manipulation_accuracy", "motion_analysis_accuracy", "pattern_recognition_accuracy", "traffic_analysis_accuracy"] },
+  "site": { mainKey: "caa", subKeys: ["3d_information_understanding_caa", "counting_and_existence_caa", "movement_prediction_and_navigation_caa", "multiview_and_crossimage_reasoning_caa", "object_localization_and_positioning_caa", "spatial_relationship_reasoning_caa"] },
+  "spar_bench": { mainKey: "acc", subKeys: ["camera_motion_infer_accuracy", "depth_prediction_oc", "depth_prediction_oc_mv", "depth_prediction_oo", "depth_prediction_oo_mv", "distance_infer_center_oo_accuracy", "distance_infer_center_oo_mv_accuracy", "distance_prediction_oc", "distance_prediction_oc_mv", "distance_prediction_oo", "distance_prediction_oo_mv", "high", "low", "middle", "obj_spatial_relation_oc_mv_accuracy", "obj_spatial_relation_oo_accuracy", "obj_spatial_relation_oo_mv_accuracy", "position_matching_accuracy", "spatial_imagination_oc_accuracy", "spatial_imagination_oc_mv_accuracy", "spatial_imagination_oo_accuracy", "spatial_imagination_oo_mv_accuracy", "view_change_infer_vci_metric"] },
+  "viewspatial": { mainKey: "acc", subKeys: ["camera_perspective_object_view_orientation_accuracy", "camera_perspective_relative_direction_accuracy", "person_perspective_object_view_orientation_accuracy", "person_perspective_relative_direction_accuracy", "person_perspective_scene_simulation_relative_direction_accuracy"] },
+  "vsi_bench": { mainKey: "acc", subKeys: ["obj_appearance_order_accuracy", "object_abs_distance", "object_counting", "object_rel_direction_accuracy", "object_rel_distance_accuracy", "object_size_estimation", "room_size_estimation", "route_planning_accuracy"] },
+  "vsi_debiased": { mainKey: "acc", subKeys: ["obj_appearance_order_accuracy", "object_abs_distance", "object_counting", "object_rel_direction_accuracy", "object_rel_distance_accuracy", "object_size_estimation", "room_size_estimation", "route_planning_accuracy"] },
+};
+
+function formatSubScoreLabel(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b(accuracy|caa)\b/gi, "")
+    .trim()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ")
+    .trim() || key;
+}
 
 const HF_CLIENT_ID = process.env.NEXT_PUBLIC_HF_CLIENT_ID || "";
 const HF_REDIRECT_URI = process.env.NEXT_PUBLIC_HF_REDIRECT_URI || "https://easi.lmms-lab.com/api/auth/callback";
@@ -60,7 +91,8 @@ const SECTIONS: SectionConfig[] = [
       f.modelType !== "" &&
       f.precision !== "" &&
       f.revision.trim() !== "" &&
-      f.weightType !== "",
+      f.weightType !== "" &&
+      f.backend !== "",
   },
   {
     id: "scores",
@@ -81,8 +113,14 @@ const INITIAL_FORM: FormData = {
   revision: "",
   weightType: "",
   baseModel: "",
+  backend: "",
   scores: Object.fromEntries(BENCHMARKS.map((b) => [b.id, ""])),
   scoreEnabled: Object.fromEntries(BENCHMARKS.map((b) => [b.id, false])),
+  subScores: Object.fromEntries(
+    BENCHMARKS.filter((b) => BENCHMARK_SUB_SCORES[b.id])
+      .map((b) => [b.id, Object.fromEntries(BENCHMARK_SUB_SCORES[b.id].subKeys.map((k) => [k, ""]))])
+  ),
+  subScoresExpanded: Object.fromEntries(BENCHMARKS.map((b) => [b.id, false])),
   remarks: "",
 };
 
@@ -160,7 +198,7 @@ function SectionWrapper({
     <div
       className="relative sm:pl-9"
       style={{
-        maxHeight: isVisible ? "1200px" : "0px",
+        maxHeight: isVisible ? "20000px" : "0px",
         opacity: isVisible ? 1 : 0,
         overflow: "hidden",
         transition: [
@@ -331,6 +369,27 @@ export default function SubmitPage() {
       scores: prev.scoreEnabled[id]
         ? { ...prev.scores, [id]: "" }
         : prev.scores,
+      subScoresExpanded: prev.scoreEnabled[id]
+        ? { ...prev.subScoresExpanded, [id]: false }
+        : prev.subScoresExpanded,
+    }));
+  }, []);
+
+  const toggleSubScoresExpanded = useCallback((id: string) => {
+    setForm((prev) => ({
+      ...prev,
+      subScoresExpanded: { ...prev.subScoresExpanded, [id]: !prev.subScoresExpanded[id] },
+    }));
+  }, []);
+
+  const updateSubScore = useCallback((benchId: string, subKey: string, value: string) => {
+    if (value !== "" && !/^-?\d*\.?\d*$/.test(value)) return;
+    setForm((prev) => ({
+      ...prev,
+      subScores: {
+        ...prev.subScores,
+        [benchId]: { ...prev.subScores[benchId], [subKey]: value },
+      },
     }));
   }, []);
 
@@ -414,13 +473,30 @@ export default function SubmitPage() {
 
   const buildPayload = useCallback((): SubmitPayload => {
     const scores: Record<string, number | null> = {};
+    const subScoresPayload: Record<string, Record<string, number | null>> = {};
+
     for (const b of BENCHMARKS) {
       if (form.scoreEnabled[b.id] && form.scores[b.id] !== "") {
         scores[b.id] = parseFloat(form.scores[b.id]);
       } else {
         scores[b.id] = null;
       }
+
+      // Include sub-scores if benchmark is enabled and has sub-score data
+      const subMapping = BENCHMARK_SUB_SCORES[b.id];
+      if (form.scoreEnabled[b.id] && subMapping && form.subScores[b.id]) {
+        const subs: Record<string, number | null> = {};
+        for (const sk of subMapping.subKeys) {
+          const val = form.subScores[b.id]?.[sk];
+          subs[sk] = val && val !== "" ? parseFloat(val) : null;
+        }
+        // Only include if at least one sub-score is filled
+        if (Object.values(subs).some((v) => v !== null)) {
+          subScoresPayload[b.id] = subs;
+        }
+      }
     }
+
     return {
       userId: hfUser?.id || "",
       userName: hfUser?.name || "",
@@ -430,7 +506,9 @@ export default function SubmitPage() {
       revision: form.revision,
       weightType: form.weightType,
       baseModel: form.baseModel,
+      backend: form.backend,
       scores,
+      subScores: subScoresPayload,
       remarks: form.remarks,
     };
   }, [form, hfUser]);
@@ -554,6 +632,8 @@ export default function SubmitPage() {
             <span className="text-lb-text">{submittedData.revision}</span>
             <span className="text-lb-text-muted">Weight:</span>
             <span className="text-lb-text">{submittedData.weightType}</span>
+            <span className="text-lb-text-muted">Backend:</span>
+            <span className="text-lb-text">{submittedData.backend}</span>
             {submittedData.baseModel && (
               <>
                 <span className="text-lb-text-muted">Base:</span>
@@ -764,6 +844,28 @@ export default function SubmitPage() {
             </div>
           </div>
 
+          {/* Evaluation Backend */}
+          <div className="mb-5">
+            <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
+              Evaluation Backend
+            </label>
+            <div className="flex flex-wrap gap-sm">
+              {[
+                { value: "vlmevalkit", label: "VLMEvalKit" },
+                { value: "lmmseval", label: "LMMsEval" },
+                { value: "others", label: "Others" },
+              ].map((b) => (
+                <button
+                  key={b.value}
+                  onClick={() => updateField("backend", b.value)}
+                  className={btnClass(form.backend === b.value)}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Base Model */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
@@ -789,36 +891,89 @@ export default function SubmitPage() {
           <p className="text-xs text-lb-text-muted mb-3">
             Check benchmarks you evaluated. Unchecked = not evaluated (null). At least one required.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-            {BENCHMARKS.map((b) => (
-              <div key={b.id} className="flex items-center gap-2.5 py-1">
-                <input
-                  type="checkbox"
-                  checked={form.scoreEnabled[b.id]}
-                  onChange={() => toggleScoreEnabled(b.id)}
-                  className="w-4 h-4 accent-lb-primary cursor-pointer"
-                />
-                <span
-                  className={`text-xs font-medium min-w-[110px] ${
-                    form.scoreEnabled[b.id] ? "text-lb-text" : "text-lb-text-muted"
-                  }`}
-                >
-                  {b.name}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={form.scores[b.id]}
-                  onChange={(e) => updateScore(b.id, e.target.value)}
-                  disabled={!form.scoreEnabled[b.id]}
-                  placeholder="—"
-                  className="flex-1 max-w-[100px] px-3 py-1.5 bg-lb-bg text-lb-text text-sm font-mono rounded-md
-                    border border-lb-border focus:outline-none focus:border-lb-border-emphasis
-                    focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted
-                    disabled:opacity-35 disabled:cursor-not-allowed"
-                />
-              </div>
-            ))}
+          <div className="space-y-1">
+            {BENCHMARKS.map((b) => {
+              const subMapping = BENCHMARK_SUB_SCORES[b.id];
+              const hasSubScores = !!subMapping;
+              const isExpanded = form.subScoresExpanded[b.id] && form.scoreEnabled[b.id] && hasSubScores;
+
+              return (
+                <div key={b.id}>
+                  {/* Main score row */}
+                  <div className="flex items-center gap-2.5 py-1">
+                    <input
+                      type="checkbox"
+                      checked={form.scoreEnabled[b.id]}
+                      onChange={() => toggleScoreEnabled(b.id)}
+                      className="w-4 h-4 accent-lb-primary cursor-pointer"
+                    />
+                    <span
+                      className={`text-xs font-medium min-w-[110px] ${
+                        form.scoreEnabled[b.id] ? "text-lb-text" : "text-lb-text-muted"
+                      }`}
+                    >
+                      {b.name}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={form.scores[b.id]}
+                      onChange={(e) => updateScore(b.id, e.target.value)}
+                      disabled={!form.scoreEnabled[b.id]}
+                      placeholder="—"
+                      className="flex-1 max-w-[100px] px-3 py-1.5 bg-lb-bg text-lb-text text-sm font-mono rounded-md
+                        border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                        focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted
+                        disabled:opacity-35 disabled:cursor-not-allowed"
+                    />
+                    {/* Sub-scores expand button */}
+                    {hasSubScores && form.scoreEnabled[b.id] && (
+                      <button
+                        onClick={() => toggleSubScoresExpanded(b.id)}
+                        className="text-[10px] font-medium text-lb-primary hover:text-lb-text transition-colors duration-150 whitespace-nowrap"
+                      >
+                        {isExpanded ? "Hide subs" : `+ ${subMapping.subKeys.length} subs`}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sub-scores panel */}
+                  <div
+                    style={{
+                      maxHeight: isExpanded ? "1500px" : "0px",
+                      opacity: isExpanded ? 1 : 0,
+                      overflow: "hidden",
+                      transition: "max-height 400ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease",
+                    }}
+                  >
+                    <div className="ml-6 pl-4 border-l-2 border-lb-primary-muted py-2 mb-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-lb-text-muted mb-2">
+                        Sub-scores for {b.name}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                        {subMapping?.subKeys.map((sk) => (
+                          <div key={sk} className="flex items-center gap-2 py-0.5">
+                            <span className="text-[11px] text-lb-text-muted min-w-[140px] truncate" title={sk}>
+                              {formatSubScoreLabel(sk)}
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={form.subScores[b.id]?.[sk] ?? ""}
+                              onChange={(e) => updateSubScore(b.id, sk, e.target.value)}
+                              placeholder="—"
+                              className="flex-1 max-w-[80px] px-2 py-1 bg-lb-bg text-lb-text text-xs font-mono rounded-md
+                                border border-lb-border focus:outline-none focus:border-lb-border-emphasis
+                                focus:ring-2 focus:ring-lb-primary-light placeholder:text-lb-text-muted"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </SectionWrapper>
 
@@ -854,6 +1009,8 @@ export default function SubmitPage() {
             <span className="text-lb-text">{form.revision}</span>
             <span className="text-lb-text-muted">Weight:</span>
             <span className="text-lb-text">{form.weightType}</span>
+            <span className="text-lb-text-muted">Backend:</span>
+            <span className="text-lb-text">{form.backend}</span>
             {form.baseModel && (
               <>
                 <span className="text-lb-text-muted">Base:</span>
