@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import ApiDocsSidebar from "@/components/ApiDocsSidebar";
 
 export const metadata: Metadata = { title: "API Reference" };
 
@@ -36,7 +37,7 @@ function CodeBlock({ lang, children }: { lang?: string; children: string }) {
           {lang}
         </div>
       )}
-      <pre className="bg-[#1e1b4b] text-[#c4b5fd] text-xs font-mono p-4 rounded-lg overflow-x-auto leading-relaxed">
+      <pre className="bg-[#1e1b4b] text-[#c4b5fd] text-xs font-mono p-4 rounded-lg overflow-x-auto leading-relaxed selection:bg-[#4338ca] selection:text-white">
         {children}
       </pre>
     </div>
@@ -110,8 +111,9 @@ function Li({ children }: { children: React.ReactNode }) {
 
 export default function ApiDocsPage() {
   return (
-    <div className="max-w-4xl mx-auto px-md py-lg">
-      <div className="animate-fade-in-up">
+    <div className="max-w-5xl mx-auto px-md py-lg flex gap-10">
+      <ApiDocsSidebar />
+      <div className="flex-1 min-w-0 animate-fade-in-up">
         {/* Header */}
         <h1 className="font-heading text-heading font-bold text-lb-text mb-2">API Reference</h1>
         <P>Programmatic access to the EASI Leaderboard — fetch results, submit evaluations, and authenticate via HuggingFace OAuth.</P>
