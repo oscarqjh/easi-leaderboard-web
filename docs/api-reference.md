@@ -83,8 +83,9 @@ Fetch the latest leaderboard data from the private HuggingFace dataset repositor
 
 1. Lists files in `leaderboard/versions/` from `lmms-lab-si/EASI-Leaderboard-Results` (with retry: 3 attempts, 15s timeout, exponential backoff)
 2. Sorts by filename timestamp, picks the latest (e.g., `bench_20260214T040553.json`)
-3. Fetches and transforms the JSON to `ModelEntry[]` format (with retry)
-4. Returns cached data if less than 5 minutes old
+3. Concurrently fetches the leaderboard JSON and `leaderboard/capability_map.json` (taxonomy mapping)
+4. Transforms leaderboard data to `ModelEntry[]` format (with retry)
+5. Returns cached data if less than 5 minutes old
 
 ### Data Transformation
 
@@ -135,9 +136,37 @@ In-memory cache with 5-minute TTL. Resets on server restart.
       }
     }
   ],
-  "lastUpdated": "2026-02-14T04:05:53Z"
+  "lastUpdated": "2026-02-14T04:05:53Z",
+  "capabilityMap": {
+    "vsi_bench": {
+      "object_counting": ["cr"],
+      "object_abs_distance": ["mm"],
+      "object_rel_distance_accuracy": ["sr", "mm"],
+      "object_rel_direction_accuracy": ["pt"]
+    },
+    "mmsi_bench": {
+      "pos_cam_cam_accuracy": ["pt"],
+      "attr_meas_accuracy": ["mm"],
+      "msr_accuracy": ["cr"]
+    }
+  }
 }
 ```
+
+### Capability Map (Taxonomy)
+
+The `capabilityMap` field maps each benchmark's sub-scores to spatial taxonomy categories. It is fetched from `leaderboard/capability_map.json` in the HF dataset repo.
+
+**Structure:** `Record<benchmarkId, Record<subScoreKey, taxonomyLabels[]>>`
+
+- Each sub-score key maps to an array of taxonomy labels (e.g., `["mm"]`, `["sr", "mm"]`)
+- Sub-scores with an empty array `[]` have no taxonomy mapping
+- Only benchmarks that have a mapping entry appear in the map
+- Taxonomy labels are dynamically derived — the set of labels depends on the data, not hardcoded
+
+The frontend uses this map to:
+- Display taxonomy tags on sub-score column headers
+- Compute per-taxonomy aggregate scores in the "Taxonomy" view mode
 
 ### Error Response
 

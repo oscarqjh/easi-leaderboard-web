@@ -208,7 +208,8 @@ export default function ApiDocsPage() {
           <ol className="list-decimal list-inside space-y-1 mb-4">
             <Li>Lists files in <Code>leaderboard/versions/</Code> (with retry: 3 attempts, exponential backoff)</Li>
             <Li>Picks the latest by filename timestamp (e.g., <Code>bench_20260214T040553.json</Code>)</Li>
-            <Li>Fetches and transforms to <Code>ModelEntry[]</Code> format</Li>
+            <Li>Concurrently fetches leaderboard JSON and <Code>capability_map.json</Code> (taxonomy mapping)</Li>
+            <Li>Transforms to <Code>ModelEntry[]</Code> format</Li>
             <Li>Returns cached data if less than 5 minutes old</Li>
           </ol>
 
@@ -226,8 +227,29 @@ export default function ApiDocsPage() {
       }
     }
   ],
-  "lastUpdated": "2026-02-14T04:05:53Z"
+  "lastUpdated": "2026-02-14T04:05:53Z",
+  "capabilityMap": {
+    "vsi_bench": {
+      "object_counting": ["cr"],
+      "object_abs_distance": ["mm"]
+    },
+    "mmsi_bench": {
+      "msr_accuracy": ["cr"]
+    }
+  }
 }`}</CodeBlock>
+
+          <H3>Taxonomy Map (<Code>capabilityMap</Code>)</H3>
+          <P>
+            Maps each benchmark{"'"}s sub-scores to spatial taxonomy categories. Fetched from <Code>capability_map.json</Code> in
+            the HF dataset repo. Structure: <Code>{"Record<benchmarkId, Record<subScoreKey, taxonomyLabels[]>>"}</Code>.
+          </P>
+          <ul className="space-y-1 mb-4">
+            <Li>Each sub-score maps to an array of taxonomy labels (e.g., <Code>["mm"]</Code>, <Code>["sr", "mm"]</Code>)</Li>
+            <Li>Empty array <Code>[]</Code> means no taxonomy mapping for that sub-score</Li>
+            <Li>Only benchmarks with mappings appear in the map</Li>
+            <Li>Taxonomy labels are dynamically derived from the data</Li>
+          </ul>
 
           <H3>Error Response</H3>
           <P>Status <Code>502</Code>:</P>
