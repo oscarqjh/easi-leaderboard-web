@@ -1,5 +1,6 @@
 import { RankedModel } from "./types";
 import { BENCHMARKS } from "./constants";
+import { ModelCapabilityRow } from "./capability-scores";
 
 const benchmarkMap = new Map(BENCHMARKS.map((b) => [b.id, b.name]));
 
@@ -214,6 +215,61 @@ export function exportLatex(
 
   lines.push("\\bottomrule", "\\end{tabular}", "\\end{adjustbox}", "\\end{table}");
 
+  return lines.join("\n");
+}
+
+/* ── Capability view exports ── */
+
+export function exportCapabilityCsv(rows: ModelCapabilityRow[], capLabels: string[]): string {
+  const header = ["Rank", "Model", "Avg", ...capLabels.map((c) => c.toUpperCase())];
+  const dataRows = rows.map((r) => [
+    r.rank,
+    r.model.displayName || r.model.name,
+    formatScore(r.capAverage),
+    ...capLabels.map((c) => formatScore(r.capabilities[c]?.value ?? null)),
+  ]);
+  return [header.join(","), ...dataRows.map((r) => r.join(","))].join("\n");
+}
+
+export function exportCapabilityJsonl(rows: ModelCapabilityRow[], capLabels: string[]): string {
+  return rows
+    .map((r) => {
+      const caps: Record<string, number | null> = {};
+      for (const c of capLabels) caps[c.toUpperCase()] = r.capabilities[c]?.value ?? null;
+      return JSON.stringify({
+        rank: r.rank,
+        model: r.model.displayName || r.model.name,
+        average: r.capAverage,
+        capabilities: caps,
+      });
+    })
+    .join("\n");
+}
+
+export function exportCapabilityLatex(rows: ModelCapabilityRow[], capLabels: string[]): string {
+  const colSpec = "rl" + "r".repeat(capLabels.length + 1);
+  const lines: string[] = [
+    "\\usepackage{booktabs}",
+    "\\usepackage{adjustbox}",
+    "",
+    "\\begin{table}[htbp]",
+    "\\centering",
+    "\\caption{EASI Leaderboard — Capability Scores}",
+    "\\label{tab:easi-capability}",
+    "\\begin{adjustbox}{width=\\textwidth}",
+    `\\begin{tabular}{${colSpec}}`,
+    "\\toprule",
+    `\\textbf{\\#} & \\textbf{Model} & \\textbf{Avg} & ${capLabels.map((c) => `\\textbf{${c.toUpperCase()}}`).join(" & ")} \\\\`,
+    "\\midrule",
+  ];
+
+  for (const r of rows) {
+    const displayName = (r.model.displayName || r.model.name).replace(/_/g, "\\_");
+    const values = capLabels.map((c) => formatScore(r.capabilities[c]?.value ?? null));
+    lines.push(`${r.rank} & ${displayName} & ${formatScore(r.capAverage)} & ${values.join(" & ")} \\\\`);
+  }
+
+  lines.push("\\bottomrule", "\\end{tabular}", "\\end{adjustbox}", "\\end{table}");
   return lines.join("\n");
 }
 

@@ -1,4 +1,5 @@
 import { BENCHMARKS } from "@/lib/constants";
+import { ViewMode } from "@/lib/types";
 
 interface ColumnSelectorProps {
   visibleColumns: string[];
@@ -6,6 +7,7 @@ interface ColumnSelectorProps {
   onChange: (columns: string[]) => void;
   onExpandedChange: (columns: string[]) => void;
   hasSubScores: (benchId: string) => boolean;
+  viewMode?: ViewMode;
 }
 
 export default function ColumnSelector({
@@ -14,6 +16,7 @@ export default function ColumnSelector({
   onChange,
   onExpandedChange,
   hasSubScores,
+  viewMode,
 }: ColumnSelectorProps) {
   const toggleVisible = (id: string) => {
     if (visibleColumns.includes(id)) {
@@ -43,7 +46,7 @@ export default function ColumnSelector({
         const active = visibleColumns.includes(b.id);
         const expanded = expandedColumns.includes(b.id);
         const hasSub = hasSubScores(b.id);
-        const showToggle = active && hasSub;
+        const showToggle = active && hasSub && viewMode !== "capability";
 
         return (
           <div

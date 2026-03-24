@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { ModelEntry, FilterState, Protocol, Precision } from "@/lib/types";
+import { ModelEntry, FilterState, Protocol, Precision, ViewMode } from "@/lib/types";
 import { CapabilityMap } from "@/lib/leaderboard-fetch";
 import { EASI8_IDS } from "@/lib/constants";
 import {
@@ -13,11 +13,13 @@ import {
   computeBestScores,
   assignRanks,
 } from "@/lib/filters";
+import { computeCapabilityView, getCapabilityTooltipData } from "@/lib/capability-scores";
 import SearchBar from "./SearchBar";
 import FilterBar from "./FilterBar";
 import ColumnSelector from "./ColumnSelector";
 import BarChart from "./BarChart";
 import LeaderboardTable from "./LeaderboardTable";
+import CapabilityTable from "./CapabilityTable";
 import ExportButton from "./ExportButton";
 
 interface OverviewClientProps {
@@ -30,6 +32,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
     search: "",
     precision: "all",
     protocol: "EASI-8",
+    viewMode: "benchmark",
     visibleColumns: [...EASI8_IDS],
     expandedColumns: [],
     showCapabilities: false,
@@ -54,6 +57,15 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
     }));
   };
 
+  const handleViewModeChange = (viewMode: ViewMode) => {
+    setFilters((prev) => ({
+      ...prev,
+      viewMode,
+      sortColumn: "average",
+      sortDirection: "desc",
+    }));
+  };
+
   const handleSort = (column: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -65,7 +77,6 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
     }));
   };
 
-  // Check if any model has sub-scores for a given benchmark
   const hasSubScores = useCallback(
     (benchId: string) => {
       return data.some(
@@ -75,6 +86,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
     [data]
   );
 
+  // Benchmark view data
   const rankedModels = useMemo(() => {
     let result = filterBySearch(data, filters.search);
     result = filterByPrecision(result, filters.precision);
@@ -87,6 +99,63 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
     () => computeBestScores(data, filters.visibleColumns),
     [data, filters.visibleColumns]
   );
+
+  // Capability view data
+  const capabilityView = useMemo(() => {
+    if (filters.viewMode !== "capability" || !capabilityMap) return null;
+    return computeCapabilityView(
+      rankedModels, filters.visibleColumns, capabilityMap,
+      filters.sortColumn, filters.sortDirection
+    );
+  }, [filters.viewMode, filters.visibleColumns, capabilityMap, rankedModels, filters.sortColumn, filters.sortDirection]);
+
+  const capabilityTooltips = useMemo((): Record<string, React.ReactNode> => {
+    if (!capabilityView || !capabilityMap) return {};
+    const tooltips: Record<string, React.ReactNode> = {};
+    for (const label of capabilityView.labels) {
+      const tooltipData = getCapabilityTooltipData(label, filters.visibleColumns, capabilityMap);
+      if (tooltipData.benchmarks.length === 0) {
+        tooltips[label] = (
+          <span className="text-lb-text-muted">
+            No sub-scores mapped to <strong className="text-lb-text">{label.toUpperCase()}</strong> in selected benchmarks
+          </span>
+        );
+      } else {
+        tooltips[label] = (
+          <div>
+            <div className="font-semibold text-lb-text mb-1.5">
+              {label.toUpperCase()} <span className="font-normal text-lb-text-muted">— contributing sub-scores</span>
+            </div>
+            {tooltipData.benchmarks.map((b) => (
+              <div key={b.benchId} className="mb-1.5 last:mb-0">
+                <div className="text-lb-primary font-medium text-[10px] uppercase tracking-wider mb-0.5">
+                  {b.benchId.replace(/_/g, " ")}
+                </div>
+                {b.subKeys.map((sk) => (
+                  <div key={sk} className="pl-2 text-lb-text-secondary font-mono text-[10px] leading-snug">
+                    {sk.replace(/_/g, " ").replace(/\baccuracy\b/gi, "").trim()}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        );
+      }
+    }
+    return tooltips;
+  }, [capabilityView, capabilityMap, filters.visibleColumns]);
+
+  // Bar chart data — use capability averages when in capability mode
+  const barChartModels = useMemo(() => {
+    if (filters.viewMode === "capability" && capabilityView) {
+      return capabilityView.rows.map((r) => ({
+        ...r.model,
+        rank: r.rank,
+        average: r.capAverage,
+      }));
+    }
+    return rankedModels;
+  }, [filters.viewMode, capabilityView, rankedModels]);
 
   return (
     <div className="space-y-md animate-fade-in-up">
@@ -103,6 +172,8 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
           onPrecisionChange={(v) => updateFilter("precision", v)}
           showCapabilities={filters.showCapabilities}
           onShowCapabilitiesChange={(v) => updateFilter("showCapabilities", v)}
+          viewMode={filters.viewMode}
+          onViewModeChange={handleViewModeChange}
         />
         <ColumnSelector
           visibleColumns={filters.visibleColumns}
@@ -110,27 +181,49 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
           onChange={(v) => updateFilter("visibleColumns", v)}
           onExpandedChange={(v) => updateFilter("expandedColumns", v)}
           hasSubScores={hasSubScores}
+          viewMode={filters.viewMode}
         />
       </div>
 
       {/* Bar Chart */}
-      <BarChart models={rankedModels} />
+      <BarChart models={barChartModels} />
 
-      {/* Table */}
+      {/* Export + Table */}
       <div className="flex justify-end relative z-20">
-        <ExportButton models={rankedModels} visibleColumns={filters.visibleColumns} expandedColumns={filters.expandedColumns} showCapabilities={filters.showCapabilities} capabilityMap={capabilityMap} />
+        <ExportButton
+          models={rankedModels}
+          visibleColumns={filters.visibleColumns}
+          expandedColumns={filters.expandedColumns}
+          showCapabilities={filters.showCapabilities}
+          capabilityMap={capabilityMap}
+          viewMode={filters.viewMode}
+          capabilityRows={capabilityView?.rows}
+          capLabels={capabilityView?.labels}
+        />
       </div>
-      <LeaderboardTable
-        models={rankedModels}
-        visibleColumns={filters.visibleColumns}
-        expandedColumns={filters.expandedColumns}
-        bestScores={bestScores}
-        sortColumn={filters.sortColumn}
-        sortDirection={filters.sortDirection}
-        onSort={handleSort}
-        showCapabilities={filters.showCapabilities}
-        capabilityMap={capabilityMap}
-      />
+
+      {filters.viewMode === "capability" && capabilityView ? (
+        <CapabilityTable
+          rows={capabilityView.rows}
+          capLabels={capabilityView.labels}
+          sortColumn={filters.sortColumn}
+          sortDirection={filters.sortDirection}
+          onSort={handleSort}
+          capabilityTooltips={capabilityTooltips}
+        />
+      ) : (
+        <LeaderboardTable
+          models={rankedModels}
+          visibleColumns={filters.visibleColumns}
+          expandedColumns={filters.expandedColumns}
+          bestScores={bestScores}
+          sortColumn={filters.sortColumn}
+          sortDirection={filters.sortDirection}
+          onSort={handleSort}
+          showCapabilities={filters.showCapabilities}
+          capabilityMap={capabilityMap}
+        />
+      )}
     </div>
   );
 }

@@ -2,9 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { LuDownload } from "react-icons/lu";
-import { RankedModel } from "@/lib/types";
+import { RankedModel, ViewMode } from "@/lib/types";
 import { CapabilityMap } from "@/lib/leaderboard-fetch";
-import { exportCsv, exportJsonl, exportLatex, downloadFile } from "@/lib/export";
+import { ModelCapabilityRow } from "@/lib/capability-scores";
+import {
+  exportCsv, exportJsonl, exportLatex,
+  exportCapabilityCsv, exportCapabilityJsonl, exportCapabilityLatex,
+  downloadFile,
+} from "@/lib/export";
 
 interface ExportButtonProps {
   models: RankedModel[];
@@ -12,13 +17,19 @@ interface ExportButtonProps {
   expandedColumns?: string[];
   showCapabilities?: boolean;
   capabilityMap?: CapabilityMap;
+  viewMode?: ViewMode;
+  capabilityRows?: ModelCapabilityRow[];
+  capLabels?: string[];
 }
 
-export default function ExportButton({ models, visibleColumns, expandedColumns = [], showCapabilities = false, capabilityMap }: ExportButtonProps) {
+export default function ExportButton({
+  models, visibleColumns, expandedColumns = [],
+  showCapabilities = false, capabilityMap,
+  viewMode, capabilityRows, capLabels,
+}: ExportButtonProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -31,6 +42,23 @@ export default function ExportButton({ models, visibleColumns, expandedColumns =
   const handleExport = useCallback(
     (format: "csv" | "jsonl" | "latex") => {
       setOpen(false);
+
+      // Capability view exports
+      if (viewMode === "capability" && capabilityRows && capLabels) {
+        switch (format) {
+          case "csv":
+            downloadFile(exportCapabilityCsv(capabilityRows, capLabels), "easi-capability.csv", "text/csv");
+            return;
+          case "jsonl":
+            downloadFile(exportCapabilityJsonl(capabilityRows, capLabels), "easi-capability.jsonl", "application/jsonl");
+            return;
+          case "latex":
+            downloadFile(exportCapabilityLatex(capabilityRows, capLabels), "easi-capability.tex", "application/x-tex");
+            return;
+        }
+      }
+
+      // Benchmark view exports
       switch (format) {
         case "csv":
           downloadFile(exportCsv(models, visibleColumns, expandedColumns), "easi-leaderboard.csv", "text/csv");
@@ -43,7 +71,7 @@ export default function ExportButton({ models, visibleColumns, expandedColumns =
           break;
       }
     },
-    [models, visibleColumns, expandedColumns, showCapabilities, capabilityMap]
+    [models, visibleColumns, expandedColumns, showCapabilities, capabilityMap, viewMode, capabilityRows, capLabels]
   );
 
   const options = [
