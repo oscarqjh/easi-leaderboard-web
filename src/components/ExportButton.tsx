@@ -3,15 +3,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { LuDownload } from "react-icons/lu";
 import { RankedModel } from "@/lib/types";
+import { CapabilityMap } from "@/lib/leaderboard-fetch";
 import { exportCsv, exportJsonl, exportLatex, downloadFile } from "@/lib/export";
 
 interface ExportButtonProps {
   models: RankedModel[];
   visibleColumns: string[];
   expandedColumns?: string[];
+  showCapabilities?: boolean;
+  capabilityMap?: CapabilityMap;
 }
 
-export default function ExportButton({ models, visibleColumns, expandedColumns = [] }: ExportButtonProps) {
+export default function ExportButton({ models, visibleColumns, expandedColumns = [], showCapabilities = false, capabilityMap }: ExportButtonProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -36,11 +39,11 @@ export default function ExportButton({ models, visibleColumns, expandedColumns =
           downloadFile(exportJsonl(models, visibleColumns, expandedColumns), "easi-leaderboard.jsonl", "application/jsonl");
           break;
         case "latex":
-          downloadFile(exportLatex(models, visibleColumns, expandedColumns), "easi-leaderboard.tex", "application/x-tex");
+          downloadFile(exportLatex(models, visibleColumns, expandedColumns, showCapabilities ? capabilityMap : undefined), "easi-leaderboard.tex", "application/x-tex");
           break;
       }
     },
-    [models, visibleColumns, expandedColumns]
+    [models, visibleColumns, expandedColumns, showCapabilities, capabilityMap]
   );
 
   const options = [

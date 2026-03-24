@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { RankedModel, SortDirection, Backend } from "@/lib/types";
+import { CapabilityMap } from "@/lib/leaderboard-fetch";
 import { BENCHMARKS } from "@/lib/constants";
 import ScoreCell from "./ScoreCell";
 import RankBadge from "./RankBadge";
@@ -27,6 +28,8 @@ interface LeaderboardTableProps {
   sortColumn: string;
   sortDirection: SortDirection;
   onSort: (column: string) => void;
+  showCapabilities?: boolean;
+  capabilityMap?: CapabilityMap;
 }
 
 function SortArrow({
@@ -84,6 +87,8 @@ export default function LeaderboardTable({
   sortColumn,
   sortDirection,
   onSort,
+  showCapabilities,
+  capabilityMap,
 }: LeaderboardTableProps) {
   const benchmarkMap = new Map(BENCHMARKS.map((b) => [b.id, b]));
 
@@ -98,6 +103,10 @@ export default function LeaderboardTable({
 
   const hasAnyExpanded = expandedColumns.length > 0 &&
     expandedColumns.some((c) => visibleColumns.includes(c) && (subScoreKeysMap[c]?.length ?? 0) > 0);
+
+  const showCapRow = showCapabilities && hasAnyExpanded && !!capabilityMap;
+  // When showing capabilities, non-expanded columns need rowSpan=3 (group header + sub headers + capability row)
+  const fixedRowSpan = showCapRow ? 3 : hasAnyExpanded ? 2 : 1;
 
   let bestAvg = -Infinity;
   for (const m of models) {
@@ -119,14 +128,14 @@ export default function LeaderboardTable({
           {hasAnyExpanded && (
             <tr className="border-b border-lb-border/60">
               {/* Fixed cols span both header rows */}
-              <th rowSpan={2} className="sticky left-0 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap w-12">
+              <th rowSpan={fixedRowSpan} className="sticky left-0 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap w-12">
                 #
               </th>
-              <th rowSpan={2} className="sticky left-12 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap min-w-[180px]">
+              <th rowSpan={fixedRowSpan} className="sticky left-12 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap min-w-[180px]">
                 Model
               </th>
               <th
-                rowSpan={2}
+                rowSpan={fixedRowSpan}
                 className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                   sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                 }`}
@@ -156,7 +165,7 @@ export default function LeaderboardTable({
                 return (
                   <th
                     key={colId}
-                    rowSpan={2}
+                    rowSpan={fixedRowSpan}
                     className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                       sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                     }`}
@@ -215,7 +224,7 @@ export default function LeaderboardTable({
                 });
               }
 
-              if (hasAnyExpanded) return null; // already rendered in row 1 with rowSpan=2
+              if (hasAnyExpanded) return null; // already rendered in row 1 with rowSpan
 
               return (
                 <th
@@ -231,6 +240,34 @@ export default function LeaderboardTable({
               );
             })}
           </tr>
+
+          {/* Row 3: Capability labels (when showCapabilities + expanded) */}
+          {showCapRow && (
+            <tr className="border-b border-lb-border">
+              {visibleColumns.map((colId) => {
+                const subKeys = subScoreKeysMap[colId] ?? [];
+                const isExpanded = expandedColumns.includes(colId) && subKeys.length > 0;
+
+                if (isExpanded) {
+                  return subKeys.map((subKey, subIdx) => {
+                    const caps = capabilityMap?.[colId]?.[subKey] ?? [];
+                    return (
+                      <th
+                        key={`cap-${colId}-${subKey}`}
+                        className={`px-3 py-0.5 text-center bg-lb-surface ${subIdx === 0 ? "border-l-2 border-l-lb-border-emphasis" : ""}`}
+                      >
+                        <span className={`text-[9px] font-medium uppercase ${caps.length > 0 ? "text-lb-primary" : "text-lb-text-muted"}`}>
+                          {caps.length > 0 ? caps.join(" · ") : "–"}
+                        </span>
+                      </th>
+                    );
+                  });
+                }
+
+                return null;
+              })}
+            </tr>
+          )}
         </thead>
 
         <tbody>

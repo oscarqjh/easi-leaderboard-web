@@ -5,8 +5,8 @@ export const maxDuration = 30;
 
 export async function GET() {
   try {
-    const { data, lastUpdated } = await getLeaderboardData();
-    return NextResponse.json({ data, lastUpdated });
+    const { data, lastUpdated, capabilityMap } = await getLeaderboardData();
+    return NextResponse.json({ data, lastUpdated, capabilityMap });
   } catch (err) {
     console.error("Leaderboard fetch error:", err);
     return NextResponse.json(

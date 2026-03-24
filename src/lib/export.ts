@@ -109,7 +109,8 @@ export function exportJsonl(
 export function exportLatex(
   models: RankedModel[],
   columns: string[],
-  expandedColumns: string[] = []
+  expandedColumns: string[] = [],
+  capabilityMap?: Record<string, Record<string, string[]>>
 ): string {
   const cols = buildColumnHeaders(models, columns, expandedColumns);
   const totalDataCols = cols.length + 1; // +1 for Avg
@@ -120,6 +121,9 @@ export function exportLatex(
     const subKeys = getSubKeys(models, ec);
     return columns.includes(ec) && subKeys.length > 0;
   });
+
+  const showCaps = hasExpanded && !!capabilityMap;
+  const multirowCount = showCaps ? 3 : 2;
 
   const lines: string[] = [
     "\\usepackage{booktabs}",
@@ -137,7 +141,7 @@ export function exportLatex(
 
   if (hasExpanded) {
     // Row 1: group headers
-    const row1Parts: string[] = ["\\multirow{2}{*}{\\textbf{\\#}}", "\\multirow{2}{*}{\\textbf{Model}}", "\\multirow{2}{*}{\\textbf{Avg}}"];
+    const row1Parts: string[] = [`\\multirow{${multirowCount}}{*}{\\textbf{\\#}}`, `\\multirow{${multirowCount}}{*}{\\textbf{Model}}`, `\\multirow{${multirowCount}}{*}{\\textbf{Avg}}`];
     // Row 2: sub-headers
     const row2Parts: string[] = [];
 
@@ -151,14 +155,12 @@ export function exportLatex(
           row2Parts.push(`\\textit{${formatSubKey(sk).replace(/_/g, "\\_")}}`);
         }
       } else {
-        row1Parts.push(`\\multirow{2}{*}{\\textbf{${benchName}}}`);
+        row1Parts.push(`\\multirow{${multirowCount}}{*}{\\textbf{${benchName}}}`);
       }
     }
 
     lines.push(row1Parts.join(" & ") + " \\\\");
     if (row2Parts.length > 0) {
-      // Need to position sub-headers under the right columns
-      // Use cmidrule for the expanded column spans
       let colIdx = 4; // 1=#, 2=Model, 3=Avg, 4=first data col
       const cmidrules: string[] = [];
       const row2Full: string[] = [];
@@ -179,6 +181,23 @@ export function exportLatex(
 
       lines.push(cmidrules.join(" "));
       lines.push("& & & " + row2Full.join(" & ") + " \\\\");
+
+      // Row 3: capability labels
+      if (showCaps) {
+        const capRow: string[] = [];
+        for (const colId of columns) {
+          const subKeys = expandedColumns.includes(colId) ? getSubKeys(models, colId) : [];
+          if (subKeys.length > 0) {
+            for (const sk of subKeys) {
+              const caps = capabilityMap[colId]?.[sk] ?? [];
+              capRow.push(caps.length > 0 ? `\\textsc{${caps.join(", ")}}` : "--");
+            }
+          } else {
+            capRow.push("");
+          }
+        }
+        lines.push("& & & " + capRow.join(" & ") + " \\\\");
+      }
     }
   } else {
     const headerCols = cols.map((c) => `\\textbf{${c.label.replace(/_/g, "\\_")}}`);

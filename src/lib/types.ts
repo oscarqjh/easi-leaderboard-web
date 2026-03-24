@@ -29,6 +29,7 @@ export interface FilterState {
   protocol: Protocol;
   visibleColumns: string[];
   expandedColumns: string[];
+  showCapabilities: boolean;
   sortColumn: string;
   sortDirection: SortDirection;
 }

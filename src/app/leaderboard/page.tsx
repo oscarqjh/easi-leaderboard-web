@@ -41,6 +41,7 @@ const EXTERNAL_LINKS = [
 export default function LeaderboardPage() {
   const [data, setData] = useState<ModelEntry[] | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [capabilityMap, setCapabilityMap] = useState<Record<string, Record<string, string[]>>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -66,6 +67,7 @@ export default function LeaderboardPage() {
           if (!cancelled) {
             setData(json.data);
             setLastUpdated(json.lastUpdated || "");
+            setCapabilityMap(json.capabilityMap || {});
             setError(null);
             setLoading(false);
           }
@@ -161,7 +163,7 @@ export default function LeaderboardPage() {
             Have evaluation results? <Link href="/submit" className="text-lb-primary font-medium hover:underline underline-offset-2">Submit your model</Link> to appear on the leaderboard.
           </p>
         </div>
-        <OverviewClient data={data} />
+        <OverviewClient data={data} capabilityMap={capabilityMap} />
       </div>
 
       {/* ── Citation ── */}

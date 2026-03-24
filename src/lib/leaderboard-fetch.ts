@@ -3,13 +3,17 @@ import { BENCHMARKS } from "./constants";
 
 const HF_API_BASE = "https://huggingface.co/api";
 const VERSIONS_PATH = "leaderboard/versions";
+const CAPABILITY_MAP_PATH = "leaderboard/capability_map.json";
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 const benchmarkIds = new Set(BENCHMARKS.map((b) => b.id));
 
+export type CapabilityMap = Record<string, Record<string, string[]>>;
+
 interface CachedData {
   data: ModelEntry[];
   lastUpdated: string;
+  capabilityMap: CapabilityMap;
   fetchedAt: number;
 }
 
@@ -99,10 +103,11 @@ function parseTimestamp(filename: string): string {
 export async function getLeaderboardData(): Promise<{
   data: ModelEntry[];
   lastUpdated: string;
+  capabilityMap: CapabilityMap;
 }> {
   // Return cache if fresh
   if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-    return { data: cache.data, lastUpdated: cache.lastUpdated };
+    return { data: cache.data, lastUpdated: cache.lastUpdated, capabilityMap: cache.capabilityMap };
   }
 
   const token = process.env.HF_UPLOAD_TOKEN;
@@ -136,11 +141,17 @@ export async function getLeaderboardData(): Promise<{
   const latestFile = jsonFiles[jsonFiles.length - 1];
   const filename = latestFile.path.split("/").pop() || "";
 
-  // 2. Fetch the latest file
-  const dataRes = await fetchWithRetry(
-    `https://huggingface.co/datasets/${repoId}/resolve/main/${latestFile.path}`,
-    { headers }
-  );
+  // 2. Fetch leaderboard data + capability map concurrently
+  const [dataRes, capMapRes] = await Promise.all([
+    fetchWithRetry(
+      `https://huggingface.co/datasets/${repoId}/resolve/main/${latestFile.path}`,
+      { headers }
+    ),
+    fetchWithRetry(
+      `https://huggingface.co/datasets/${repoId}/resolve/main/${CAPABILITY_MAP_PATH}`,
+      { headers }
+    ).catch(() => null), // non-fatal
+  ]);
 
   if (!dataRes.ok) {
     throw new Error(`Failed to fetch leaderboard data (${dataRes.status})`);
@@ -148,12 +159,22 @@ export async function getLeaderboardData(): Promise<{
 
   const raw = (await dataRes.json()) as Record<string, HfModelData>;
 
+  // Parse capability map (non-fatal)
+  let capabilityMap: CapabilityMap = {};
+  if (capMapRes && capMapRes.ok) {
+    try {
+      capabilityMap = (await capMapRes.json()) as CapabilityMap;
+    } catch {
+      // malformed JSON — skip
+    }
+  }
+
   // 3. Transform
   const data = transformData(raw);
   const lastUpdated = parseTimestamp(filename);
 
   // 4. Cache
-  cache = { data, lastUpdated, fetchedAt: Date.now() };
+  cache = { data, lastUpdated, capabilityMap, fetchedAt: Date.now() };
 
-  return { data, lastUpdated };
+  return { data, lastUpdated, capabilityMap };
 }

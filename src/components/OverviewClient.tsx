@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { ModelEntry, FilterState, Protocol, Precision } from "@/lib/types";
+import { CapabilityMap } from "@/lib/leaderboard-fetch";
 import { EASI8_IDS } from "@/lib/constants";
 import {
   filterBySearch,
@@ -21,15 +22,17 @@ import ExportButton from "./ExportButton";
 
 interface OverviewClientProps {
   data: ModelEntry[];
+  capabilityMap?: CapabilityMap;
 }
 
-export default function OverviewClient({ data }: OverviewClientProps) {
+export default function OverviewClient({ data, capabilityMap }: OverviewClientProps) {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     precision: "all",
     protocol: "EASI-8",
     visibleColumns: [...EASI8_IDS],
     expandedColumns: [],
+    showCapabilities: false,
     sortColumn: "average",
     sortDirection: "desc",
   });
@@ -98,6 +101,8 @@ export default function OverviewClient({ data }: OverviewClientProps) {
           onProtocolChange={handleProtocolChange}
           precision={filters.precision}
           onPrecisionChange={(v) => updateFilter("precision", v)}
+          showCapabilities={filters.showCapabilities}
+          onShowCapabilitiesChange={(v) => updateFilter("showCapabilities", v)}
         />
         <ColumnSelector
           visibleColumns={filters.visibleColumns}
@@ -112,9 +117,9 @@ export default function OverviewClient({ data }: OverviewClientProps) {
       <BarChart models={rankedModels} />
 
       {/* Table */}
-      {/* <div className="flex justify-end relative z-20">
-        <ExportButton models={rankedModels} visibleColumns={filters.visibleColumns} expandedColumns={filters.expandedColumns} />
-      </div> */}
+      <div className="flex justify-end relative z-20">
+        <ExportButton models={rankedModels} visibleColumns={filters.visibleColumns} expandedColumns={filters.expandedColumns} showCapabilities={filters.showCapabilities} capabilityMap={capabilityMap} />
+      </div>
       <LeaderboardTable
         models={rankedModels}
         visibleColumns={filters.visibleColumns}
@@ -123,6 +128,8 @@ export default function OverviewClient({ data }: OverviewClientProps) {
         sortColumn={filters.sortColumn}
         sortDirection={filters.sortDirection}
         onSort={handleSort}
+        showCapabilities={filters.showCapabilities}
+        capabilityMap={capabilityMap}
       />
     </div>
   );
