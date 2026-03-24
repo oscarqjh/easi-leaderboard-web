@@ -55,7 +55,7 @@ export default function FilterBar({
           View
         </span>
         <div className="flex rounded-md border border-lb-border overflow-hidden">
-          {(["benchmark", "capability"] as ViewMode[]).map((v) => (
+          {(["benchmark", "taxonomy"] as ViewMode[]).map((v) => (
             <button
               key={v}
               onClick={() => onViewModeChange(v)}
@@ -67,9 +67,9 @@ export default function FilterBar({
                 }
               `}
             >
-              {v === "capability" ? (
+              {v === "taxonomy" ? (
                 <Tooltip
-                  content="Scores are computed as the simple average of all sub-scores tagged with each capability across the selected benchmarks."
+                  content="Scores are computed as the simple average of all sub-scores tagged with each taxonomy across the selected benchmarks."
                   showIcon
                 >
                   <span>{v}</span>
@@ -80,11 +80,11 @@ export default function FilterBar({
         </div>
       </div>
 
-      {/* Capabilities toggle — hidden in capability view mode */}
-      {viewMode !== "capability" && (
+      {/* Taxonomy toggle — hidden in taxonomy view mode */}
+      {viewMode !== "taxonomy" && (
         <div className="flex items-center gap-sm">
           <span className="text-xs font-semibold uppercase tracking-widest text-lb-text-muted">
-            Capabilities
+            Taxonomy
           </span>
           <div className="flex rounded-md border border-lb-border overflow-hidden">
             {(["OFF", "ON"] as const).map((v) => (

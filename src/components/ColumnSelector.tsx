@@ -46,7 +46,7 @@ export default function ColumnSelector({
         const active = visibleColumns.includes(b.id);
         const expanded = expandedColumns.includes(b.id);
         const hasSub = hasSubScores(b.id);
-        const showToggle = active && hasSub && viewMode !== "capability";
+        const showToggle = active && hasSub && viewMode !== "taxonomy";
 
         return (
           <div

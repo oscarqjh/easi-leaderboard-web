@@ -2,7 +2,7 @@ export type ModelType = "pretrained" | "finetuned" | "instruction" | "rl";
 export type Precision = "bfloat16" | "float16" | "float32" | "int8";
 export type Protocol = "EASI-8" | "ALL";
 export type SortDirection = "asc" | "desc";
-export type ViewMode = "benchmark" | "capability";
+export type ViewMode = "benchmark" | "taxonomy";
 
 export interface BenchmarkMeta {
   id: string;

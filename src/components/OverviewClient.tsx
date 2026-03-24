@@ -102,7 +102,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
 
   // Capability view data
   const capabilityView = useMemo(() => {
-    if (filters.viewMode !== "capability" || !capabilityMap) return null;
+    if (filters.viewMode !== "taxonomy" || !capabilityMap) return null;
     return computeCapabilityView(
       rankedModels, filters.visibleColumns, capabilityMap,
       filters.sortColumn, filters.sortDirection
@@ -147,7 +147,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
 
   // Bar chart data — use capability averages when in capability mode
   const barChartModels = useMemo(() => {
-    if (filters.viewMode === "capability" && capabilityView) {
+    if (filters.viewMode === "taxonomy" && capabilityView) {
       return capabilityView.rows.map((r) => ({
         ...r.model,
         rank: r.rank,
@@ -202,7 +202,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
         />
       </div>
 
-      {filters.viewMode === "capability" && capabilityView ? (
+      {filters.viewMode === "taxonomy" && capabilityView ? (
         <CapabilityTable
           rows={capabilityView.rows}
           capLabels={capabilityView.labels}

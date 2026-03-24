@@ -192,7 +192,7 @@ export default function CapabilityTable({
                           {label.toUpperCase()} <span className="font-normal text-lb-text-muted">— cannot be computed</span>
                         </div>
                         <div className="text-lb-text-secondary text-[10px] mb-1.5">
-                          Missing sub-scores for this capability:
+                          Missing sub-scores for this taxonomy:
                         </div>
                         {Object.entries(grouped).map(([benchId, subKeys]) => (
                           <div key={benchId} className="mb-1.5 last:mb-0">

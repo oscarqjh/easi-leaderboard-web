@@ -44,16 +44,16 @@ export default function ExportButton({
       setOpen(false);
 
       // Capability view exports
-      if (viewMode === "capability" && capabilityRows && capLabels) {
+      if (viewMode === "taxonomy" && capabilityRows && capLabels) {
         switch (format) {
           case "csv":
-            downloadFile(exportCapabilityCsv(capabilityRows, capLabels), "easi-capability.csv", "text/csv");
+            downloadFile(exportCapabilityCsv(capabilityRows, capLabels), "easi-taxonomy.csv", "text/csv");
             return;
           case "jsonl":
-            downloadFile(exportCapabilityJsonl(capabilityRows, capLabels), "easi-capability.jsonl", "application/jsonl");
+            downloadFile(exportCapabilityJsonl(capabilityRows, capLabels), "easi-taxonomy.jsonl", "application/jsonl");
             return;
           case "latex":
-            downloadFile(exportCapabilityLatex(capabilityRows, capLabels), "easi-capability.tex", "application/x-tex");
+            downloadFile(exportCapabilityLatex(capabilityRows, capLabels), "easi-taxonomy.tex", "application/x-tex");
             return;
         }
       }
