@@ -262,9 +262,7 @@ export default function AboutPage() {
                 label: "arXiv Paper",
                 href: "https://arxiv.org/abs/2508.13142",
                 icon: (
-                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M4 1h8a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v1h6V4H5zm0 3v1h6V7H5zm0 3v1h4v-1H5z" />
-                  </svg>
+                  <img src="/arxiv-logomark-small.svg" alt="arXiv" className="w-4 h-4" />
                 ),
               },
               {
