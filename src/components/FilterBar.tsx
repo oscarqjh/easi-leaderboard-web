@@ -1,5 +1,5 @@
 import { Protocol, Precision, ViewMode } from "@/lib/types";
-import { PRECISION_OPTIONS } from "@/lib/constants";
+import { PRECISION_OPTIONS, CAPABILITIES } from "@/lib/constants";
 import Tooltip from "./Tooltip";
 
 interface FilterBarProps {
@@ -69,7 +69,19 @@ export default function FilterBar({
             >
               {v === "taxonomy" ? (
                 <Tooltip
-                  content="Scores are computed as the simple average of all sub-scores tagged with each taxonomy across the selected benchmarks."
+                  content={
+                    <div>
+                      <div className="text-lb-text mb-1.5">Scores are computed as the simple average of all sub-scores tagged with each taxonomy across the selected benchmarks.</div>
+                      <div className="text-[10px] font-semibold text-lb-text-muted uppercase tracking-wider mb-1">Taxonomy Labels</div>
+                      {CAPABILITIES.map((c) => (
+                        <div key={c.abbr} className="text-[10px] leading-relaxed">
+                          <span className="text-lb-primary font-semibold">{c.abbr}</span>
+                          <span className="text-lb-text-muted"> — </span>
+                          <span className="text-lb-text-secondary">{c.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  }
                   showIcon
                 >
                   <span>{v}</span>

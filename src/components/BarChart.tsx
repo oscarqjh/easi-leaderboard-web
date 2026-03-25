@@ -41,7 +41,7 @@ export default function BarChart({ models, maxCount = 10 }: BarChartProps) {
                 : 0;
             return (
               <div key={model.name} className="flex items-center gap-sm">
-                <span className="w-36 text-xs font-medium text-lb-text-secondary truncate text-right">
+                <span className="w-56 flex-shrink-0 text-xs font-medium text-lb-text-secondary whitespace-nowrap text-right">
                   {model.displayName || model.name}
                 </span>
                 <div className="flex-1 h-5 bg-lb-bg rounded-sm border border-lb-border overflow-hidden">
