@@ -67,7 +67,7 @@ export function buildSubmissionPath(
     ? modelName.split("/")[1]
     : modelName;
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").replace("Z", "");
-  return `${userName}/${modelPath}_${precision}_${weightType}_${timestamp}.json`;
+  return `${userName}/${modelPath}_${precision}_${weightType}_${timestamp}`;
 }
 
 /**
@@ -104,6 +104,62 @@ export async function uploadJsonToRepo(
   if (!res.ok) {
     const errText = await res.text().catch(() => "Unknown error");
     return { success: false, error: `Upload to HuggingFace failed (${res.status}): ${errText.slice(0, 300)}` };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Upload a submission (JSON + ZIP) to a HuggingFace dataset repo in a single commit.
+ * The JSON is uploaded as UTF-8, the ZIP as base64.
+ */
+export async function uploadSubmissionToRepo(
+  repoId: string,
+  token: string,
+  folderPath: string,
+  jsonContent: string,
+  zipBuffer: Buffer,
+  commitMessage: string
+): Promise<{ success: boolean; error?: string }> {
+  const url = `${HF_API_BASE}/datasets/${repoId}/commit/main`;
+
+  const headerLine = JSON.stringify({
+    key: "header",
+    value: { summary: commitMessage },
+  });
+  const jsonFileLine = JSON.stringify({
+    key: "file",
+    value: {
+      path: `${folderPath}/results.json`,
+      content: jsonContent,
+      encoding: "utf-8",
+    },
+  });
+  const zipFileLine = JSON.stringify({
+    key: "file",
+    value: {
+      path: `${folderPath}/results.zip`,
+      content: zipBuffer.toString("base64"),
+      encoding: "base64",
+    },
+  });
+  const body = `${headerLine}\n${jsonFileLine}\n${zipFileLine}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-ndjson",
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "Unknown error");
+    return {
+      success: false,
+      error: `Upload to HuggingFace failed (${res.status}): ${errText.slice(0, 300)}`,
+    };
   }
 
   return { success: true };

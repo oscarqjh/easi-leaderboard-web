@@ -3,9 +3,12 @@ import {
   getModelInfo,
   hasLicense,
   buildSubmissionPath,
-  uploadJsonToRepo,
+  uploadSubmissionToRepo,
 } from "@/lib/hf-api";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { validateZipBuffer } from "@/lib/zip-validation";
+
+export const runtime = "nodejs";
 
 const HF_USERINFO_URL = "https://huggingface.co/oauth/userinfo";
 
@@ -48,12 +51,17 @@ async function verifyUser(request: NextRequest): Promise<HfUserInfo | null> {
 
 export async function POST(request: NextRequest) {
   const token = process.env.HF_UPLOAD_TOKEN;
-  const repoId = process.env.HF_REQUESTS_REPO || "lmms-lab-si/EASI-Leaderboard-Requests";
+  const repoId =
+    process.env.HF_REQUESTS_REPO || "lmms-lab-si/EASI-Leaderboard-Requests";
 
   if (!token) {
     console.error("Missing HF_UPLOAD_TOKEN env var");
     return NextResponse.json(
-      { success: false, error: "Server configuration error. Please contact the maintainers." },
+      {
+        success: false,
+        error:
+          "Server configuration error. Please contact the maintainers.",
+      },
       { status: 500 }
     );
   }
@@ -62,7 +70,11 @@ export async function POST(request: NextRequest) {
   const user = await verifyUser(request);
   if (!user) {
     return NextResponse.json(
-      { success: false, error: "Your session has expired. Please sign in with HuggingFace again." },
+      {
+        success: false,
+        error:
+          "Your session has expired. Please sign in with HuggingFace again.",
+      },
       { status: 401 }
     );
   }
@@ -73,17 +85,61 @@ export async function POST(request: NextRequest) {
   const rateCheck = checkRateLimit(userName);
   if (!rateCheck.allowed) {
     return NextResponse.json(
-      { success: false, error: `You've reached the submission limit (5 per 2 hours). Please try again in ${rateCheck.retryAfterMinutes} minutes.` },
+      {
+        success: false,
+        error: `You've reached the submission limit (5 per 2 hours). Please try again in ${rateCheck.retryAfterMinutes} minutes.`,
+      },
       { status: 429 }
+    );
+  }
+
+  // ── Parse multipart form data ──
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Invalid request. Expected multipart form data." },
+      { status: 400 }
+    );
+  }
+
+  // ── Extract payload JSON ──
+  const payloadStr = formData.get("payload");
+  if (typeof payloadStr !== "string") {
+    return NextResponse.json(
+      { success: false, error: "Missing submission payload." },
+      { status: 400 }
     );
   }
 
   let body: SubmitPayload;
   try {
-    body = (await request.json()) as SubmitPayload;
+    body = JSON.parse(payloadStr) as SubmitPayload;
   } catch {
     return NextResponse.json(
-      { success: false, error: "Invalid request body." },
+      { success: false, error: "Invalid submission payload." },
+      { status: 400 }
+    );
+  }
+
+  // ── Extract zip file ──
+  const zipFile = formData.get("zipFile");
+  if (!zipFile || !(zipFile instanceof File)) {
+    return NextResponse.json(
+      { success: false, error: "Evaluation results zip file is required." },
+      { status: 400 }
+    );
+  }
+
+  const zipArrayBuffer = await zipFile.arrayBuffer();
+  const zipBuffer = Buffer.from(zipArrayBuffer);
+
+  // ── Validate zip ──
+  const zipResult = validateZipBuffer(zipBuffer);
+  if (!zipResult.valid) {
+    return NextResponse.json(
+      { success: false, error: zipResult.error },
       { status: 400 }
     );
   }
@@ -91,19 +147,31 @@ export async function POST(request: NextRequest) {
   // ── Required fields ──
   if (!body.modelName || !body.modelName.includes("/")) {
     return NextResponse.json(
-      { success: false, error: "A valid model name in the format 'organization/model-name' is required." },
+      {
+        success: false,
+        error:
+          "A valid model name in the format 'organization/model-name' is required.",
+      },
       { status: 400 }
     );
   }
   if (!body.modelType) {
     return NextResponse.json(
-      { success: false, error: "Please select a model type (pretrained, finetuned, instruction, or rl)." },
+      {
+        success: false,
+        error:
+          "Please select a model type (pretrained, finetuned, instruction, or rl).",
+      },
       { status: 400 }
     );
   }
   if (!body.precision) {
     return NextResponse.json(
-      { success: false, error: "Please select a precision (bfloat16, float16, float32, or int8)." },
+      {
+        success: false,
+        error:
+          "Please select a precision (bfloat16, float16, float32, or int8).",
+      },
       { status: 400 }
     );
   }
@@ -112,7 +180,10 @@ export async function POST(request: NextRequest) {
   const modelInfo = await getModelInfo(body.modelName, token);
   if (!modelInfo) {
     return NextResponse.json(
-      { success: false, error: `Model "${body.modelName}" was not found on HuggingFace. Please verify the model name and ensure it is publicly accessible.` },
+      {
+        success: false,
+        error: `Model "${body.modelName}" was not found on HuggingFace. Please verify the model name and ensure it is publicly accessible.`,
+      },
       { status: 400 }
     );
   }
@@ -120,7 +191,10 @@ export async function POST(request: NextRequest) {
   // ── Verify license exists ──
   if (!hasLicense(modelInfo)) {
     return NextResponse.json(
-      { success: false, error: `Model "${body.modelName}" does not have a license set. Please add a license to your model card on HuggingFace before submitting.` },
+      {
+        success: false,
+        error: `Model "${body.modelName}" does not have a license set. Please add a license to your model card on HuggingFace before submitting.`,
+      },
       { status: 400 }
     );
   }
@@ -129,22 +203,28 @@ export async function POST(request: NextRequest) {
   if (body.weightType === "Delta" || body.weightType === "Adapter") {
     if (!body.baseModel) {
       return NextResponse.json(
-        { success: false, error: `Base model is required when using ${body.weightType} weights. Please specify the base model.` },
+        {
+          success: false,
+          error: `Base model is required when using ${body.weightType} weights. Please specify the base model.`,
+        },
         { status: 400 }
       );
     }
     const baseModelInfo = await getModelInfo(body.baseModel, token);
     if (!baseModelInfo) {
       return NextResponse.json(
-        { success: false, error: `Base model "${body.baseModel}" was not found on HuggingFace. Please verify the base model name.` },
+        {
+          success: false,
+          error: `Base model "${body.baseModel}" was not found on HuggingFace. Please verify the base model name.`,
+        },
         { status: 400 }
       );
     }
   }
 
-  // ── Build submission path and JSON (using server-verified userName) ──
+  // ── Build submission path and JSON ──
   const revision = body.revision || "main";
-  const submissionPath = buildSubmissionPath(
+  const submissionFolder = buildSubmissionPath(
     userName,
     body.modelName,
     body.precision,
@@ -172,18 +252,23 @@ export async function POST(request: NextRequest) {
   const fileContent = JSON.stringify(submissionContent, null, 2);
 
   // ── Upload to HF dataset repo ──
-  const uploadResult = await uploadJsonToRepo(
+  const uploadResult = await uploadSubmissionToRepo(
     repoId,
     token,
-    submissionPath,
+    submissionFolder,
     fileContent,
+    zipBuffer,
     `Add ${body.modelName} submission by ${userName}`
   );
 
   if (!uploadResult.success) {
     console.error("Upload failed:", uploadResult.error);
     return NextResponse.json(
-      { success: false, error: "Failed to upload your submission to the repository. Please try again later or contact the maintainers if the issue persists." },
+      {
+        success: false,
+        error:
+          "Failed to upload your submission to the repository. Please try again later or contact the maintainers if the issue persists.",
+      },
       { status: 500 }
     );
   }

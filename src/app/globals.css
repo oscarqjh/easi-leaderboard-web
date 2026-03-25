@@ -210,3 +210,17 @@
   outline: 2px solid #6366f1;
   outline-offset: 2px;
 }
+
+/* ============================================================================
+ * Upload Zone
+ * ============================================================================ */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 0.8s linear infinite;
+}

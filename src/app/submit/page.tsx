@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { BENCHMARKS } from "@/lib/constants";
+import ZipUploadZone from "@/components/ZipUploadZone";
 
 /* ── Types ── */
 
@@ -24,6 +25,7 @@ interface FormData {
   subScores: Record<string, Record<string, string>>;
   subScoresExpanded: Record<string, boolean>;
   remarks: string;
+  zipFile: File | null;
 }
 
 interface SubmitPayload {
@@ -107,7 +109,7 @@ const SECTIONS: SectionConfig[] = [
     isValid: (f) =>
       Object.entries(f.scoreEnabled).some(
         ([id, enabled]) => enabled && f.scores[id] !== "" && !isNaN(parseFloat(f.scores[id]))
-      ),
+      ) && f.zipFile !== null,
   },
   { id: "remarks", sideLabel: "REMARKS", isValid: () => true },
   { id: "review", sideLabel: "REVIEW", isValid: () => true },
@@ -126,6 +128,7 @@ const INITIAL_FORM: FormData = {
   subScores: {},
   subScoresExpanded: Object.fromEntries(BENCHMARKS.map((b) => [b.id, false])),
   remarks: "",
+  zipFile: null,
 };
 
 /* ── HuggingFace auto-fill helpers ── */
@@ -543,13 +546,18 @@ export default function SubmitPage() {
 
     try {
       const accessToken = localStorage.getItem(LS_TOKEN_KEY) || "";
-      const res = await fetch("/api/submit", {
+      const submitData = new FormData();
+      submitData.append("payload", JSON.stringify(payload));
+      if (form.zipFile) {
+        submitData.append("zipFile", form.zipFile);
+      }
+
+      const res = await fetch("/api/submit/", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(payload),
+        body: submitData,
       });
 
       if (!res.ok) {
@@ -575,7 +583,7 @@ export default function SubmitPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [buildPayload]);
+  }, [buildPayload, form.zipFile]);
 
   const handleReset = useCallback(() => {
     setSubmitted(false);
@@ -998,6 +1006,11 @@ export default function SubmitPage() {
               );
             })}
           </div>
+          <ZipUploadZone
+            file={form.zipFile}
+            onFileAccepted={(f) => updateField("zipFile", f)}
+            onFileRemoved={() => updateField("zipFile", null)}
+          />
         </SectionWrapper>
 
         {/* S4: Remarks */}
@@ -1038,6 +1051,19 @@ export default function SubmitPage() {
               <>
                 <span className="text-lb-text-muted">Base:</span>
                 <span className="text-lb-text">{form.baseModel}</span>
+              </>
+            )}
+            {form.zipFile && (
+              <>
+                <span className="text-lb-text-muted">Eval Results:</span>
+                <span className="font-mono text-lb-text">
+                  {form.zipFile.name}{" "}
+                  <span className="text-lb-text-muted font-sans">
+                    ({form.zipFile.size < 1024 * 1024
+                      ? `${(form.zipFile.size / 1024).toFixed(1)} KB`
+                      : `${(form.zipFile.size / (1024 * 1024)).toFixed(1)} MB`})
+                  </span>
+                </span>
               </>
             )}
           </div>

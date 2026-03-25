@@ -263,8 +263,9 @@ export default function ApiDocsPage() {
           <H2>Submit Evaluation</H2>
           <EndpointHeader method="POST" path="/api/submit" auth="Bearer" />
           <P>
-            Submit model evaluation results. Verifies identity via HuggingFace OAuth token, validates model metadata,
-            and uploads a JSON file to the dataset repository.
+            Submit model evaluation results with a required zip file containing raw evaluation outputs for verification.
+            Verifies identity via HuggingFace OAuth token, validates model metadata and zip contents,
+            and uploads both a JSON summary and the zip file to the dataset repository.
           </P>
 
           <H3>Rate Limiting</H3>
@@ -273,11 +274,22 @@ export default function ApiDocsPage() {
             Each timestamp expires independently. Tracked in-memory by server-verified username.
           </P>
 
-          <H3>Request</H3>
-          <CodeBlock lang="bash">{`curl -X POST https://easi.lmms-lab.com/api/submit \\
+          <H3>Request Format</H3>
+          <P>
+            The request uses <Code>multipart/form-data</Code> with two parts:
+          </P>
+          <Table
+            headers={["Part", "Type", "Required", "Description"]}
+            rows={[
+              ["`payload`", "JSON string", "Yes", "Submission metadata and scores (see fields below)"],
+              ["`zipFile`", "File (.zip)", "Yes", "Zip archive containing all evaluation result files (max 50 MB)"],
+            ]}
+          />
+
+          <H3>Example Request</H3>
+          <CodeBlock lang="bash">{`curl -X POST https://easi.lmms-lab.com/api/submit/ \\
   -H "Authorization: Bearer hf_oauth_xxxxxxxx" \\
-  -H "Content-Type: application/json" \\
-  -d '{
+  -F 'payload={
     "modelName": "org/model-name",
     "modelType": "instruction",
     "precision": "bfloat16",
@@ -294,9 +306,10 @@ export default function ApiDocsPage() {
       }
     },
     "remarks": "Submitted via cURL"
-  }'`}</CodeBlock>
+  }' \\
+  -F "zipFile=@eval_results.zip"`}</CodeBlock>
 
-          <H3>Request Fields</H3>
+          <H3>Payload Fields</H3>
           <Table
             headers={["Field", "Type", "Required", "Description"]}
             rows={[
@@ -312,6 +325,16 @@ export default function ApiDocsPage() {
               ["`remarks`", "string", "No", "Free-text notes"],
             ]}
           />
+
+          <H3>Zip File Requirements</H3>
+          <P>
+            The zip file must contain your raw evaluation result files for independent verification.
+          </P>
+          <ul className="space-y-1 mb-4">
+            <Li><strong className="text-lb-text">Max size:</strong> 50 MB (max decompressed: 500 MB)</Li>
+            <Li><strong className="text-lb-text">Allowed file types:</strong> .json, .jsonl, .csv, .tsv, .txt, .log, .yaml, .yml, .xml, .md, .html, .pdf, .py, .sh, .png, .jpg, .jpeg, .gif, .svg, .parquet, .arrow, .npy, .pkl</Li>
+            <Li><strong className="text-lb-text">Security:</strong> Files with disallowed extensions or path traversal patterns are rejected</Li>
+          </ul>
 
           <H3>Sub-Scores</H3>
           <P>
@@ -354,14 +377,17 @@ export default function ApiDocsPage() {
               ["1", "HF_UPLOAD_TOKEN configured", "500"],
               ["2", "Bearer token valid (HF userinfo)", "401"],
               ["3", "Rate limit not exceeded", "429"],
-              ["4", "Valid JSON body", "400"],
-              ["5", "modelName non-empty with /", "400"],
-              ["6", "modelType non-empty", "400"],
-              ["7", "precision non-empty", "400"],
-              ["8", "Model exists on HuggingFace", "400"],
-              ["9", "Model has a license", "400"],
-              ["10", "Base model valid (Delta/Adapter)", "400"],
-              ["11", "Upload to HF repo succeeds", "500"],
+              ["4", "Valid multipart form data", "400"],
+              ["5", "Payload JSON parseable", "400"],
+              ["6", "Zip file present", "400"],
+              ["7", "Zip valid (magic bytes, size, contents)", "400"],
+              ["8", "modelName non-empty with /", "400"],
+              ["9", "modelType non-empty", "400"],
+              ["10", "precision non-empty", "400"],
+              ["11", "Model exists on HuggingFace", "400"],
+              ["12", "Model has a license", "400"],
+              ["13", "Base model valid (Delta/Adapter)", "400"],
+              ["14", "Upload to HF repo succeeds", "500"],
             ]}
           />
 
@@ -375,6 +401,14 @@ export default function ApiDocsPage() {
               ["500", "Server configuration error. Please contact the maintainers."],
               ["401", "Your session has expired. Please sign in with HuggingFace again."],
               ["429", "You've reached the submission limit (5 per 2 hours)."],
+              ["400", "Invalid request. Expected multipart form data."],
+              ["400", "Missing submission payload."],
+              ["400", "Evaluation results zip file is required."],
+              ["400", "File is not a valid ZIP archive."],
+              ["400", "ZIP file exceeds 50 MB limit."],
+              ["400", "ZIP decompressed size exceeds 500 MB limit."],
+              ["400", "ZIP contains invalid file paths."],
+              ["400", "ZIP contains disallowed file types: {list}"],
               ["400", "A valid model name in the format 'organization/model-name' is required."],
               ["400", "Model \"{name}\" was not found on HuggingFace."],
               ["400", "Model \"{name}\" does not have a license set."],
@@ -390,38 +424,39 @@ export default function ApiDocsPage() {
 
           <H3>Python</H3>
           <CodeBlock lang="python">{`import requests
+import json
 
 # Obtain an HF access token via device code flow or OAuth
 hf_access_token = "hf_oauth_xxxxxxxx"
 
+payload = {
+    "modelName": "org/model-name",
+    "modelType": "instruction",
+    "precision": "bfloat16",
+    "revision": "main",
+    "weightType": "Original",
+    "baseModel": "",
+    "backend": "vlmevalkit",
+    "scores": {
+        "vsi_bench": 27.0,
+        "mmsi_bench": None,   # null = not evaluated
+        "site": 0,            # 0 = scored zero
+    },
+    "subScores": {
+        "vsi_bench": {
+            "obj_appearance_order_accuracy": 25.3,
+            "object_abs_distance": 18.7,
+            "object_counting": None,
+        },
+    },
+    "remarks": "Submitted via script",
+}
+
 response = requests.post(
-    "https://easi.lmms-lab.com/api/submit",
-    headers={
-        "Authorization": f"Bearer {hf_access_token}",
-        "Content-Type": "application/json",
-    },
-    json={
-        "modelName": "org/model-name",
-        "modelType": "instruction",
-        "precision": "bfloat16",
-        "revision": "main",
-        "weightType": "Original",
-        "baseModel": "",
-        "backend": "vlmevalkit",
-        "scores": {
-            "vsi_bench": 27.0,
-            "mmsi_bench": None,   # null = not evaluated
-            "site": 0,            # 0 = scored zero
-        },
-        "subScores": {
-            "vsi_bench": {
-                "obj_appearance_order_accuracy": 25.3,
-                "object_abs_distance": 18.7,
-                "object_counting": None,
-            },
-        },
-        "remarks": "Submitted via script",
-    },
+    "https://easi.lmms-lab.com/api/submit/",
+    headers={"Authorization": f"Bearer {hf_access_token}"},
+    files={"zipFile": ("eval_results.zip", open("eval_results.zip", "rb"), "application/zip")},
+    data={"payload": json.dumps(payload)},
 )
 
 data = response.json()
@@ -431,10 +466,9 @@ else:
     print(f"Error: {data['error']}")`}</CodeBlock>
 
           <H3>cURL</H3>
-          <CodeBlock lang="bash">{`curl -X POST https://easi.lmms-lab.com/api/submit \\
+          <CodeBlock lang="bash">{`curl -X POST https://easi.lmms-lab.com/api/submit/ \\
   -H "Authorization: Bearer hf_oauth_xxxxxxxx" \\
-  -H "Content-Type: application/json" \\
-  -d '{
+  -F 'payload={
     "modelName": "org/model-name",
     "modelType": "instruction",
     "precision": "bfloat16",
@@ -445,7 +479,8 @@ else:
     "scores": {"vsi_bench": 27.0},
     "subScores": {"vsi_bench": {"object_counting": 30.2}},
     "remarks": "Submitted via cURL"
-  }'`}</CodeBlock>
+  }' \\
+  -F "zipFile=@eval_results.zip"`}</CodeBlock>
         </Section>
       </div>
     </div>
