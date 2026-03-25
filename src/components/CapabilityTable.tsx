@@ -91,7 +91,7 @@ export default function CapabilityTable({
               Model
             </th>
             <th
-              className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+              className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                 sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
               }`}
               onClick={() => onSort("average")}
@@ -102,7 +102,7 @@ export default function CapabilityTable({
             {capLabels.map((label) => (
               <th
                 key={label}
-                className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                   sortColumn === label ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                 }`}
                 onClick={() => onSort(label)}
@@ -145,7 +145,7 @@ export default function CapabilityTable({
                   )}
                   {model.backend && <BackendBadge backend={model.backend} />}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-center">
                   <span
                     className={`font-mono text-sm font-semibold ${
                       row.capAverage !== null && row.capAverage === bestAvg
@@ -211,7 +211,7 @@ export default function CapabilityTable({
                   }
 
                   return (
-                    <td key={label} className="px-4 py-3 text-right">
+                    <td key={label} className="px-4 py-3 text-center">
                       {tooltipContent ? (
                         <Tooltip content={tooltipContent} showIcon>
                           {scoreEl}

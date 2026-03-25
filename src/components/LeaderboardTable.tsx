@@ -136,7 +136,7 @@ export default function LeaderboardTable({
               </th>
               <th
                 rowSpan={fixedRowSpan}
-                className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                   sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                 }`}
                 onClick={() => onSort("average")}
@@ -166,7 +166,7 @@ export default function LeaderboardTable({
                   <th
                     key={colId}
                     rowSpan={fixedRowSpan}
-                    className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                    className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                       sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                     }`}
                     onClick={() => onSort(colId)}
@@ -190,7 +190,7 @@ export default function LeaderboardTable({
                   Model
                 </th>
                 <th
-                  className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                  className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                     sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                   }`}
                   onClick={() => onSort("average")}
@@ -212,7 +212,7 @@ export default function LeaderboardTable({
                   return (
                     <th
                       key={sortId}
-                      className={`px-3 py-2 text-right font-medium text-[10px] tracking-normal whitespace-nowrap cursor-pointer transition-colors duration-150 bg-lb-surface ${
+                      className={`px-3 py-2 text-center font-medium text-[10px] tracking-normal whitespace-nowrap cursor-pointer transition-colors duration-150 bg-lb-surface ${
                         sortColumn === sortId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                       } ${subIdx === 0 ? "border-l-2 border-l-lb-border-emphasis" : ""}`}
                       onClick={() => onSort(sortId)}
@@ -229,7 +229,7 @@ export default function LeaderboardTable({
               return (
                 <th
                   key={colId}
-                  className={`px-4 py-3 text-right font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                  className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
                     sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                   }`}
                   onClick={() => onSort(colId)}
@@ -300,7 +300,7 @@ export default function LeaderboardTable({
                   <BackendBadge backend={model.backend} />
                 )}
               </td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-center">
                 <span
                   className={`font-mono text-sm font-semibold ${
                     model.average !== null && model.average === bestAvg
@@ -320,7 +320,7 @@ export default function LeaderboardTable({
                   return subKeys.map((subKey) => {
                     const val = model.subScores?.[colId]?.[subKey] ?? null;
                     return (
-                      <td key={`${colId}-${subKey}`} className="px-3 py-3 text-right">
+                      <td key={`${colId}-${subKey}`} className="px-3 py-3 text-center">
                         <span className="font-mono text-xs text-lb-text-secondary">
                           {val !== null ? val.toFixed(1) : "-"}
                         </span>
@@ -330,7 +330,7 @@ export default function LeaderboardTable({
                 }
 
                 return (
-                  <td key={colId} className="px-4 py-3 text-right">
+                  <td key={colId} className="px-4 py-3 text-center">
                     <ScoreCell
                       value={model.scores[colId] ?? null}
                       isBest={
