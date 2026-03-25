@@ -49,20 +49,27 @@ interface SectionConfig {
 
 /* ── Constants ── */
 
-const BENCHMARK_SUB_SCORES: Record<string, { mainKey: string; subKeys: string[] }> = {
-  "3dsrbench": { mainKey: "acc", subKeys: ["height_higher", "location_above", "location_closer_to_camera", "location_next_to", "multi_object_closer_to", "multi_object_facing", "multi_object_parallel", "multi_object_same_direction", "multi_object_viewpoint_towards_object", "orientation_in_front_of", "orientation_on_the_left", "orientation_viewpoint"] },
-  "blink": { mainKey: "acc", subKeys: ["art_style", "counting", "forensic_detection", "functional_correspondence", "iq_test", "jigsaw", "multi_view_reasoning", "object_localization", "relative_depth", "relative_reflectance", "semantic_correspondence", "spatial_relation", "visual_correspondence", "visual_similarity"] },
-  "embspatial": { mainKey: "acc", subKeys: ["ai2thor_accuracy", "mp3d_accuracy", "scannet_accuracy"] },
-  "mindcube_tiny": { mainKey: "acc", subKeys: ["among_accuracy", "around_accuracy", "rotation_accuracy"] },
-  "mmsi_bench": { mainKey: "acc", subKeys: ["attr_appr_accuracy", "attr_meas_accuracy", "motion_cam_accuracy", "motion_obj_accuracy", "msr_accuracy", "pos_cam_cam_accuracy", "pos_cam_obj_accuracy", "pos_cam_reg_accuracy", "pos_obj_obj_accuracy", "pos_obj_reg_accuracy", "pos_reg_reg_accuracy"] },
-  "mmsi_video_bench": { mainKey: "acc", subKeys: ["cross_video_accuracy", "motion_understanding_accuracy", "planning_accuracy", "prediction_accuracy", "spatial_construction_accuracy"] },
-  "omnispatial_(manual_cot)": { mainKey: "acc", subKeys: ["allocentric_accuracy", "egocentric_accuracy", "geometric_reasoning_accuracy", "geospatial_strategy_accuracy", "hypothetical_accuracy", "localization_accuracy", "manipulation_accuracy", "motion_analysis_accuracy", "pattern_recognition_accuracy", "traffic_analysis_accuracy"] },
-  "site": { mainKey: "caa", subKeys: ["3d_information_understanding_caa", "counting_and_existence_caa", "movement_prediction_and_navigation_caa", "multiview_and_crossimage_reasoning_caa", "object_localization_and_positioning_caa", "spatial_relationship_reasoning_caa"] },
-  "spar_bench": { mainKey: "acc", subKeys: ["camera_motion_infer_accuracy", "depth_prediction_oc", "depth_prediction_oc_mv", "depth_prediction_oo", "depth_prediction_oo_mv", "distance_infer_center_oo_accuracy", "distance_infer_center_oo_mv_accuracy", "distance_prediction_oc", "distance_prediction_oc_mv", "distance_prediction_oo", "distance_prediction_oo_mv", "high", "low", "middle", "obj_spatial_relation_oc_mv_accuracy", "obj_spatial_relation_oo_accuracy", "obj_spatial_relation_oo_mv_accuracy", "position_matching_accuracy", "spatial_imagination_oc_accuracy", "spatial_imagination_oc_mv_accuracy", "spatial_imagination_oo_accuracy", "spatial_imagination_oo_mv_accuracy", "view_change_infer_vci_metric"] },
-  "viewspatial": { mainKey: "acc", subKeys: ["camera_perspective_object_view_orientation_accuracy", "camera_perspective_relative_direction_accuracy", "person_perspective_object_view_orientation_accuracy", "person_perspective_relative_direction_accuracy", "person_perspective_scene_simulation_relative_direction_accuracy"] },
-  "vsi_bench": { mainKey: "acc", subKeys: ["obj_appearance_order_accuracy", "object_abs_distance", "object_counting", "object_rel_direction_accuracy", "object_rel_distance_accuracy", "object_size_estimation", "room_size_estimation", "route_planning_accuracy"] },
-  "vsi_debiased": { mainKey: "acc", subKeys: ["obj_appearance_order_accuracy", "object_abs_distance", "object_counting", "object_rel_direction_accuracy", "object_rel_distance_accuracy", "object_size_estimation", "room_size_estimation", "route_planning_accuracy"] },
-};
+/**
+ * Extract sub-score keys per benchmark from leaderboard model data.
+ * Scans all models' subScores to build the complete mapping.
+ */
+function extractSubScoreKeys(
+  models: { subScores?: Record<string, Record<string, number>> }[]
+): Record<string, string[]> {
+  const map: Record<string, Set<string>> = {};
+  for (const m of models) {
+    if (!m.subScores) continue;
+    for (const [benchId, subs] of Object.entries(m.subScores)) {
+      if (!map[benchId]) map[benchId] = new Set();
+      for (const k of Object.keys(subs)) map[benchId].add(k);
+    }
+  }
+  const result: Record<string, string[]> = {};
+  for (const [benchId, keys] of Object.entries(map)) {
+    result[benchId] = Array.from(keys).sort();
+  }
+  return result;
+}
 
 function formatSubScoreLabel(key: string): string {
   return key
@@ -116,10 +123,7 @@ const INITIAL_FORM: FormData = {
   backend: "",
   scores: Object.fromEntries(BENCHMARKS.map((b) => [b.id, ""])),
   scoreEnabled: Object.fromEntries(BENCHMARKS.map((b) => [b.id, false])),
-  subScores: Object.fromEntries(
-    BENCHMARKS.filter((b) => BENCHMARK_SUB_SCORES[b.id])
-      .map((b) => [b.id, Object.fromEntries(BENCHMARK_SUB_SCORES[b.id].subKeys.map((k) => [k, ""]))])
-  ),
+  subScores: {},
   subScoresExpanded: Object.fromEntries(BENCHMARKS.map((b) => [b.id, false])),
   remarks: "",
 };
@@ -236,6 +240,25 @@ export default function SubmitPage() {
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
   const [authError, setAuthError] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState(false);
+  const [benchSubScoreKeys, setBenchSubScoreKeys] = useState<Record<string, string[]>>({});
+
+  // Fetch sub-score keys from leaderboard data on mount
+  useEffect(() => {
+    fetch("/api/leaderboard")
+      .then((res) => res.ok ? res.json() : null)
+      .then((json) => {
+        if (!json?.data) return;
+        const keys = extractSubScoreKeys(json.data);
+        setBenchSubScoreKeys(keys);
+        // Initialize subScores form fields
+        const subScores: Record<string, Record<string, string>> = {};
+        for (const [benchId, subKeys] of Object.entries(keys)) {
+          subScores[benchId] = Object.fromEntries(subKeys.map((k) => [k, ""]));
+        }
+        setForm((prev) => ({ ...prev, subScores }));
+      })
+      .catch(() => {}); // non-fatal
+  }, []);
 
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -483,10 +506,10 @@ export default function SubmitPage() {
       }
 
       // Include sub-scores if benchmark is enabled and has sub-score data
-      const subMapping = BENCHMARK_SUB_SCORES[b.id];
-      if (form.scoreEnabled[b.id] && subMapping && form.subScores[b.id]) {
+      const subKeys = benchSubScoreKeys[b.id];
+      if (form.scoreEnabled[b.id] && subKeys && form.subScores[b.id]) {
         const subs: Record<string, number | null> = {};
-        for (const sk of subMapping.subKeys) {
+        for (const sk of subKeys) {
           const val = form.subScores[b.id]?.[sk];
           subs[sk] = val && val !== "" ? parseFloat(val) : null;
         }
@@ -511,7 +534,7 @@ export default function SubmitPage() {
       subScores: subScoresPayload,
       remarks: form.remarks,
     };
-  }, [form, hfUser]);
+  }, [form, hfUser, benchSubScoreKeys]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
@@ -893,8 +916,8 @@ export default function SubmitPage() {
           </p>
           <div className="space-y-1">
             {BENCHMARKS.map((b) => {
-              const subMapping = BENCHMARK_SUB_SCORES[b.id];
-              const hasSubScores = !!subMapping;
+              const subKeys = benchSubScoreKeys[b.id];
+              const hasSubScores = !!subKeys && subKeys.length > 0;
               const isExpanded = form.subScoresExpanded[b.id] && form.scoreEnabled[b.id] && hasSubScores;
 
               return (
@@ -932,7 +955,7 @@ export default function SubmitPage() {
                         onClick={() => toggleSubScoresExpanded(b.id)}
                         className="text-[10px] font-medium text-lb-primary hover:text-lb-text transition-colors duration-150 whitespace-nowrap"
                       >
-                        {isExpanded ? "Hide subs" : `+ ${subMapping.subKeys.length} subs`}
+                        {isExpanded ? "Hide subs" : `+ ${subKeys!.length} subs`}
                       </button>
                     )}
                   </div>
@@ -951,7 +974,7 @@ export default function SubmitPage() {
                         Sub-scores for {b.name}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                        {subMapping?.subKeys.map((sk) => (
+                        {subKeys?.map((sk) => (
                           <div key={sk} className="flex items-center gap-2 py-0.5">
                             <span className="text-[11px] text-lb-text-muted min-w-[140px] truncate" title={sk}>
                               {formatSubScoreLabel(sk)}
