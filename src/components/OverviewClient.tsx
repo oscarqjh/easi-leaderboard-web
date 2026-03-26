@@ -77,6 +77,14 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
     }));
   };
 
+  const handleVisibleChange = (columns: string[]) => {
+    setFilters((prev) => ({
+      ...prev,
+      visibleColumns: columns,
+      expandedColumns: prev.expandedColumns.filter((c) => columns.includes(c)),
+    }));
+  };
+
   const hasSubScores = useCallback(
     (benchId: string) => {
       return data.some(
@@ -177,10 +185,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
         />
         <ColumnSelector
           visibleColumns={filters.visibleColumns}
-          expandedColumns={filters.expandedColumns}
-          onChange={(v) => updateFilter("visibleColumns", v)}
-          onExpandedChange={(v) => updateFilter("expandedColumns", v)}
-          hasSubScores={hasSubScores}
+          onChange={handleVisibleChange}
           viewMode={filters.viewMode}
         />
       </div>
@@ -220,6 +225,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
           sortColumn={filters.sortColumn}
           sortDirection={filters.sortDirection}
           onSort={handleSort}
+          onExpandedChange={(cols) => updateFilter("expandedColumns", cols)}
           showCapabilities={filters.showCapabilities}
           capabilityMap={capabilityMap}
         />

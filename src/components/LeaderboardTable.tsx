@@ -28,30 +28,67 @@ interface LeaderboardTableProps {
   sortColumn: string;
   sortDirection: SortDirection;
   onSort: (column: string) => void;
+  onExpandedChange: (columns: string[]) => void;
   showCapabilities?: boolean;
   capabilityMap?: CapabilityMap;
 }
 
-function SortArrow({
+function SortIcon({
   column,
   sortColumn,
   sortDirection,
+  onSort,
 }: {
   column: string;
   sortColumn: string;
   sortDirection: SortDirection;
+  onSort: (column: string) => void;
 }) {
-  if (column !== sortColumn) {
-    return <span className="text-lb-text-muted/40 ml-1 text-xs">&#8597;</span>;
-  }
+  const isActive = column === sortColumn;
   return (
-    <span
-      className={`ml-1 text-xs inline-block transition-transform duration-200 ${
-        sortDirection === "asc" ? "rotate-180" : ""
+    <button
+      onClick={(e) => { e.stopPropagation(); onSort(column); }}
+      className={`inline-flex items-center justify-center w-4 h-4 rounded-sm transition-all duration-150 flex-shrink-0 ${
+        isActive
+          ? "text-lb-primary"
+          : "text-lb-text-muted/40 hover:text-lb-primary hover:bg-lb-primary-light"
       }`}
+      title={`Sort by ${column}`}
     >
-      &#9660;
-    </span>
+      {isActive ? (
+        <span className={`text-[10px] inline-block transition-transform duration-200 ${
+          sortDirection === "asc" ? "rotate-180" : ""
+        }`}>&#9660;</span>
+      ) : (
+        <span className="text-[10px]">&#8597;</span>
+      )}
+    </button>
+  );
+}
+
+function ExpandChevron({
+  expanded,
+  onClick,
+}: {
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={`inline-flex items-center justify-center w-5 h-4 rounded transition-all duration-150 ${
+        expanded
+          ? "text-lb-primary bg-lb-primary-light"
+          : "text-lb-text-muted hover:text-lb-primary hover:bg-lb-primary-light"
+      }`}
+      title={expanded ? "Collapse sub-scores" : "Expand sub-scores"}
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+        className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+      >
+        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   );
 }
 
@@ -87,6 +124,7 @@ export default function LeaderboardTable({
   sortColumn,
   sortDirection,
   onSort,
+  onExpandedChange,
   showCapabilities,
   capabilityMap,
 }: LeaderboardTableProps) {
@@ -136,19 +174,21 @@ export default function LeaderboardTable({
               </th>
               <th
                 rowSpan={fixedRowSpan}
-                className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
-                  sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
-                }`}
-                onClick={() => onSort("average")}
+                className="px-3 py-0 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap min-w-[80px]"
               >
-                Avg
-                <SortArrow column="average" sortColumn={sortColumn} sortDirection={sortDirection} />
+                <div className="flex flex-col items-center py-2.5">
+                  <div className="flex items-center gap-1">
+                    <span className={sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted"}>Avg</span>
+                    <SortIcon column="average" sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
+                  </div>
+                </div>
               </th>
 
               {visibleColumns.map((colId) => {
                 const meta = benchmarkMap.get(colId);
                 const subKeys = subScoreKeysMap[colId] ?? [];
                 const isExpanded = expandedColumns.includes(colId) && subKeys.length > 0;
+                const colHasSubScores = (subKeys.length > 0) || getSubScoreKeys(models, colId).length > 0;
 
                 if (isExpanded) {
                   return (
@@ -157,7 +197,13 @@ export default function LeaderboardTable({
                       colSpan={subKeys.length}
                       className="px-4 py-2 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap text-lb-primary bg-lb-bg border-b border-lb-border border-l-2 border-l-lb-border-emphasis"
                     >
-                      {meta?.name ?? colId}
+                      <div className="flex items-center justify-center gap-1">
+                        {meta?.name ?? colId}
+                        <ExpandChevron
+                          expanded={true}
+                          onClick={() => onExpandedChange(expandedColumns.filter((c) => c !== colId))}
+                        />
+                      </div>
                     </th>
                   );
                 }
@@ -166,13 +212,24 @@ export default function LeaderboardTable({
                   <th
                     key={colId}
                     rowSpan={fixedRowSpan}
-                    className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
-                      sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
-                    }`}
-                    onClick={() => onSort(colId)}
+                    className="px-3 py-0 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap min-w-[80px]"
                   >
-                    {meta?.name ?? colId}
-                    <SortArrow column={colId} sortColumn={sortColumn} sortDirection={sortDirection} />
+                    <div className="flex flex-col items-center pt-2.5 pb-1 gap-0.5">
+                      <div className="relative flex items-center justify-center">
+                        <span className={sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted"}>
+                          {meta?.name ?? colId}
+                        </span>
+                        <span className="absolute -right-5 top-0 -translate-y-0.5">
+                          <SortIcon column={colId} sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
+                        </span>
+                      </div>
+                      {colHasSubScores && (
+                        <ExpandChevron
+                          expanded={false}
+                          onClick={() => onExpandedChange([...expandedColumns, colId])}
+                        />
+                      )}
+                    </div>
                   </th>
                 );
               })}
@@ -189,14 +246,13 @@ export default function LeaderboardTable({
                 <th className="sticky left-12 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap min-w-[180px]">
                   Model
                 </th>
-                <th
-                  className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
-                    sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
-                  }`}
-                  onClick={() => onSort("average")}
-                >
-                  Avg
-                  <SortArrow column="average" sortColumn={sortColumn} sortDirection={sortDirection} />
+                <th className="px-3 py-0 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap min-w-[80px]">
+                  <div className="flex flex-col items-center py-2.5">
+                    <div className="flex items-center gap-1">
+                      <span className={sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted"}>Avg</span>
+                      <SortIcon column="average" sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
+                    </div>
+                  </div>
                 </th>
               </>
             )}
@@ -205,6 +261,7 @@ export default function LeaderboardTable({
               const meta = benchmarkMap.get(colId);
               const subKeys = subScoreKeysMap[colId] ?? [];
               const isExpanded = expandedColumns.includes(colId) && subKeys.length > 0;
+              const colHasSubScores = (subKeys.length > 0) || getSubScoreKeys(models, colId).length > 0;
 
               if (isExpanded) {
                 return subKeys.map((subKey, subIdx) => {
@@ -212,13 +269,14 @@ export default function LeaderboardTable({
                   return (
                     <th
                       key={sortId}
-                      className={`px-3 py-2 text-center font-medium text-[10px] tracking-normal whitespace-nowrap cursor-pointer transition-colors duration-150 bg-lb-surface ${
-                        sortColumn === sortId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
+                      className={`px-3 py-2 text-center font-medium text-[10px] tracking-normal whitespace-nowrap bg-lb-surface ${
+                        sortColumn === sortId ? "text-lb-primary" : "text-lb-text-muted"
                       } ${subIdx === 0 ? "border-l-2 border-l-lb-border-emphasis" : ""}`}
-                      onClick={() => onSort(sortId)}
                     >
-                      {formatSubKey(subKey)}
-                      <SortArrow column={sortId} sortColumn={sortColumn} sortDirection={sortDirection} />
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span>{formatSubKey(subKey)}</span>
+                        <SortIcon column={sortId} sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
+                      </div>
                     </th>
                   );
                 });
@@ -229,13 +287,24 @@ export default function LeaderboardTable({
               return (
                 <th
                   key={colId}
-                  className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
-                    sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
-                  }`}
-                  onClick={() => onSort(colId)}
+                  className="px-3 py-0 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap min-w-[80px]"
                 >
-                  {meta?.name ?? colId}
-                  <SortArrow column={colId} sortColumn={sortColumn} sortDirection={sortDirection} />
+                  <div className="flex flex-col items-center pt-2.5 pb-1 gap-0.5">
+                    <div className="relative flex items-center justify-center">
+                      <span className={sortColumn === colId ? "text-lb-primary" : "text-lb-text-muted"}>
+                        {meta?.name ?? colId}
+                      </span>
+                      <span className="absolute -right-5 top-0 -translate-y-0.5">
+                        <SortIcon column={colId} sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
+                      </span>
+                    </div>
+                    {colHasSubScores && (
+                      <ExpandChevron
+                        expanded={false}
+                        onClick={() => onExpandedChange([...expandedColumns, colId])}
+                      />
+                    )}
+                  </div>
                 </th>
               );
             })}

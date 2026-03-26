@@ -6,7 +6,7 @@ const MAX_DECOMPRESSED_SIZE = 500 * 1024 * 1024; // 500 MB
 const ALLOWED_EXTENSIONS = new Set([
   // Data
   ".json", ".jsonl", ".csv", ".tsv", ".txt", ".log",
-  ".parquet", ".arrow", ".npy", ".pkl",
+  ".parquet", ".arrow", ".npy", ".pkl", ".xlsx",
   // Config/docs
   ".yaml", ".yml", ".xml", ".md", ".html", ".pdf",
   // Code
