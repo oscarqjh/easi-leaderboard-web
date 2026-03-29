@@ -110,8 +110,90 @@ export async function uploadJsonToRepo(
 }
 
 /**
+ * Compute SHA256 hex digest of a buffer.
+ */
+function sha256Hex(buffer: Buffer): string {
+  const crypto = require("crypto");
+  return crypto.createHash("sha256").update(buffer).digest("hex");
+}
+
+/**
+ * Pre-upload a binary file to HuggingFace LFS storage.
+ * Returns the OID (SHA256 hash) on success.
+ *
+ * Steps:
+ *   1. POST to /api/datasets/{repo}/preupload/main to get upload URL
+ *   2. PUT the file content to the upload URL
+ */
+async function preUploadLfs(
+  repoId: string,
+  token: string,
+  path: string,
+  buffer: Buffer,
+): Promise<{ success: boolean; oid: string; error?: string }> {
+  const oid = sha256Hex(buffer);
+  const size = buffer.length;
+
+  // Step 1: Request pre-upload
+  const preUploadUrl = `${HF_API_BASE}/datasets/${repoId}/preupload/main`;
+  const preUploadRes = await fetch(preUploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      files: [{ path, sample: oid, size }],
+    }),
+  });
+
+  if (!preUploadRes.ok) {
+    const errText = await preUploadRes.text().catch(() => "Unknown error");
+    return {
+      success: false,
+      oid,
+      error: `LFS pre-upload failed (${preUploadRes.status}): ${errText.slice(0, 300)}`,
+    };
+  }
+
+  const preUploadData = await preUploadRes.json() as {
+    files: Array<{
+      path: string;
+      uploadUrl: string;
+    }>;
+  };
+
+  const fileEntry = preUploadData.files?.[0];
+  if (!fileEntry?.uploadUrl) {
+    // No upload URL means the file already exists in LFS storage
+    return { success: true, oid };
+  }
+
+  // Step 2: Upload the file content to the provided URL
+  const uploadRes = await fetch(fileEntry.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/octet-stream",
+    },
+    body: buffer,
+  });
+
+  if (!uploadRes.ok) {
+    const errText = await uploadRes.text().catch(() => "Unknown error");
+    return {
+      success: false,
+      oid,
+      error: `LFS upload failed (${uploadRes.status}): ${errText.slice(0, 300)}`,
+    };
+  }
+
+  return { success: true, oid };
+}
+
+/**
  * Upload a submission (JSON + ZIP) to a HuggingFace dataset repo in a single commit.
- * The JSON is uploaded as UTF-8, the ZIP as base64.
+ * The JSON is uploaded inline as UTF-8.
+ * The ZIP is pre-uploaded to LFS, then referenced via lfsFile in the commit.
  */
 export async function uploadSubmissionToRepo(
   repoId: string,
@@ -121,6 +203,14 @@ export async function uploadSubmissionToRepo(
   zipBuffer: Buffer,
   commitMessage: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Step 1: Pre-upload the zip to LFS storage
+  const zipPath = `${folderPath}/results.zip`;
+  const lfsResult = await preUploadLfs(repoId, token, zipPath, zipBuffer);
+  if (!lfsResult.success) {
+    return { success: false, error: lfsResult.error };
+  }
+
+  // Step 2: Create the commit with JSON inline + ZIP as lfsFile reference
   const url = `${HF_API_BASE}/datasets/${repoId}/commit/main`;
 
   const headerLine = JSON.stringify({
@@ -136,11 +226,12 @@ export async function uploadSubmissionToRepo(
     },
   });
   const zipFileLine = JSON.stringify({
-    key: "file",
+    key: "lfsFile",
     value: {
-      path: `${folderPath}/results.zip`,
-      content: zipBuffer.toString("base64"),
-      encoding: "base64",
+      path: zipPath,
+      algo: "sha256",
+      oid: lfsResult.oid,
+      size: zipBuffer.length,
     },
   });
   const body = `${headerLine}\n${jsonFileLine}\n${zipFileLine}`;
