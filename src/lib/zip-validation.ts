@@ -1,7 +1,7 @@
 import AdmZip from "adm-zip";
 
-const MAX_ZIP_SIZE = 50 * 1024 * 1024; // 50 MB
-const MAX_DECOMPRESSED_SIZE = 500 * 1024 * 1024; // 500 MB
+const MAX_ZIP_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_DECOMPRESSED_SIZE = 100 * 1024 * 1024; // 100 MB
 
 const ALLOWED_EXTENSIONS = new Set([
   // Data
@@ -35,7 +35,7 @@ export function validateZipBuffer(buffer: Buffer): ZipValidationResult {
 
   // 2. File size check
   if (buffer.length > MAX_ZIP_SIZE) {
-    return { valid: false, error: "ZIP file exceeds 50 MB limit." };
+    return { valid: false, error: "ZIP file exceeds 20 MB limit." };
   }
 
   // 3. Parse zip to inspect entries
@@ -72,7 +72,7 @@ export function validateZipBuffer(buffer: Buffer): ZipValidationResult {
   }
 
   if (totalDecompressed > MAX_DECOMPRESSED_SIZE) {
-    return { valid: false, error: "ZIP decompressed size exceeds 500 MB limit." };
+    return { valid: false, error: "ZIP decompressed size exceeds 100 MB limit." };
   }
 
   if (disallowed.length > 0) {

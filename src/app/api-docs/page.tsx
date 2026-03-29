@@ -125,7 +125,9 @@ export default function ApiDocsPage() {
             rows={[
               ["`/api/auth/callback`", "GET", "None", "HuggingFace OAuth callback"],
               ["`/api/leaderboard`", "GET", "None (public)", "Fetch latest leaderboard data"],
-              ["`/api/submit`", "POST", "Bearer token", "Submit model evaluation results"],
+              ["`/api/submit`", "POST", "Bearer token", "Submit evaluation (browser flow, Vercel Blob)"],
+              ["`/api/submit-with-file`", "POST", "Bearer token", "Submit evaluation (scripts, inline zip)"],
+              ["`/api/blob-upload`", "POST", "Bearer token", "Vercel Blob token exchange (browser only)"],
             ]}
           />
         </div>
@@ -150,17 +152,17 @@ export default function ApiDocsPage() {
 
           <H3>Script Flow</H3>
           <ol className="list-decimal list-inside space-y-1 mb-4">
-            <Li>Obtain an HF access token via device code flow or any OAuth method</Li>
-            <Li>Call <Code>POST /api/submit</Code> with <Code>Authorization: Bearer &lt;token&gt;</Code></Li>
-            <Li>Server verifies identity via HuggingFace <Code>/oauth/userinfo</Code></Li>
+            <Li>Obtain an HF token — either a regular API token (<Code>hf_*</Code>) from <Code>huggingface.co/settings/tokens</Code> or an OAuth token</Li>
+            <Li>Call <Code>POST /api/submit-with-file/</Code> with <Code>Authorization: Bearer &lt;token&gt;</Code> and the zip file as multipart</Li>
+            <Li>Server verifies identity via HuggingFace (<Code>/oauth/userinfo</Code> for OAuth tokens, <Code>/api/whoami</Code> for regular tokens)</Li>
           </ol>
 
           <H3>Token Details</H3>
           <ul className="space-y-2 mb-4">
-            <Li><strong className="text-lb-text">What it is:</strong> A HuggingFace OAuth access token (e.g., <Code>hf_oauth_xxxxxxxx</Code>)</Li>
+            <Li><strong className="text-lb-text">Accepted tokens:</strong> Both regular HF API tokens (<Code>hf_*</Code>) and OAuth tokens (<Code>hf_oauth_*</Code>)</Li>
             <Li><strong className="text-lb-text">What it proves:</strong> The identity of the user (username, profile)</Li>
             <Li><strong className="text-lb-text">What it does NOT grant:</strong> Write access to the EASI dataset repository</Li>
-            <Li><strong className="text-lb-text">Stored at:</strong> <Code>localStorage</Code> key <Code>easi_hf_token</Code></Li>
+            <Li><strong className="text-lb-text">For scripts:</strong> Use a regular HF API token from <Code>huggingface.co/settings/tokens</Code> — no browser OAuth flow needed</Li>
             <Li><strong className="text-lb-text">Expiry:</strong> Determined by HuggingFace. Submit returns 401 when expired.</Li>
           </ul>
         </Section>
@@ -260,12 +262,30 @@ export default function ApiDocsPage() {
 
         {/* ── POST /api/submit ── */}
         <Section id="post-apisubmit">
-          <H2>Submit Evaluation</H2>
+          <H2>Submit Evaluation (Browser)</H2>
           <EndpointHeader method="POST" path="/api/submit" auth="Bearer" />
           <P>
-            Submit model evaluation results with a required zip file containing raw evaluation outputs for verification.
-            Verifies identity via HuggingFace OAuth token, validates model metadata and zip contents,
-            and uploads both a JSON summary and the zip file to the dataset repository.
+            Used by the web form. Accepts a JSON payload with a Vercel Blob URL referencing the uploaded zip file.
+            The zip is uploaded to Vercel Blob first (via <Code>/api/blob-upload/</Code>), then this endpoint
+            fetches it, validates contents, and uploads to the HuggingFace dataset repository.
+          </P>
+          <P>
+            <strong className="text-lb-text">For scripts and programmatic access, use <Code>/api/submit-with-file/</Code> instead</strong> (see below).
+          </P>
+        </Section>
+
+        {/* ── POST /api/submit-with-file ── */}
+        <Section id="post-apisubmitwithfile">
+          <H2>Submit Evaluation (Scripts)</H2>
+          <EndpointHeader method="POST" path="/api/submit-with-file" auth="Bearer" />
+          <P>
+            Script-friendly endpoint for programmatic submissions. Accepts <Code>multipart/form-data</Code> with
+            the JSON payload and zip file inline. Supports both regular HF API tokens (<Code>hf_*</Code>) and
+            OAuth tokens — no browser flow needed.
+          </P>
+          <P>
+            <strong className="text-lb-text">Zip file size limit: 4.5 MB</strong> (Vercel serverless payload limit).
+            For larger files, use the web form which uploads via Vercel Blob with no size limit.
           </P>
 
           <H3>Rate Limiting</H3>
@@ -276,38 +296,15 @@ export default function ApiDocsPage() {
 
           <H3>Request Format</H3>
           <P>
-            The request uses <Code>multipart/form-data</Code> with two parts:
+            <Code>multipart/form-data</Code> with two parts:
           </P>
           <Table
             headers={["Part", "Type", "Required", "Description"]}
             rows={[
               ["`payload`", "JSON string", "Yes", "Submission metadata and scores (see fields below)"],
-              ["`zipFile`", "File (.zip)", "Yes", "Zip archive containing all evaluation result files (max 50 MB)"],
+              ["`zipFile`", "File (.zip)", "Yes", "Zip archive containing evaluation result files (max 4.5 MB)"],
             ]}
           />
-
-          <H3>Example Request</H3>
-          <CodeBlock lang="bash">{`curl -X POST https://easi.lmms-lab.com/api/submit/ \\
-  -H "Authorization: Bearer hf_oauth_xxxxxxxx" \\
-  -F 'payload={
-    "modelName": "org/model-name",
-    "modelType": "instruction",
-    "precision": "bfloat16",
-    "revision": "main",
-    "weightType": "Original",
-    "baseModel": "",
-    "backend": "vlmevalkit",
-    "scores": {"vsi_bench": 27.0, "mmsi_bench": 28.6},
-    "subScores": {
-      "vsi_bench": {
-        "obj_appearance_order_accuracy": 25.3,
-        "object_abs_distance": 18.7,
-        "object_counting": null
-      }
-    },
-    "remarks": "Submitted via cURL"
-  }' \\
-  -F "zipFile=@eval_results.zip"`}</CodeBlock>
 
           <H3>Payload Fields</H3>
           <Table
@@ -331,7 +328,7 @@ export default function ApiDocsPage() {
             The zip file must contain your raw evaluation result files for independent verification.
           </P>
           <ul className="space-y-1 mb-4">
-            <Li><strong className="text-lb-text">Max size:</strong> 50 MB (max decompressed: 500 MB)</Li>
+            <Li><strong className="text-lb-text">Max size:</strong> 20 MB (max decompressed: 100 MB)</Li>
             <Li><strong className="text-lb-text">Allowed file types:</strong> .json, .jsonl, .csv, .tsv, .txt, .log, .yaml, .yml, .xml, .md, .html, .pdf, .py, .sh, .png, .jpg, .jpeg, .gif, .svg, .parquet, .arrow, .npy, .pkl</Li>
             <Li><strong className="text-lb-text">Security:</strong> Files with disallowed extensions or path traversal patterns are rejected</Li>
           </ul>
@@ -375,19 +372,19 @@ export default function ApiDocsPage() {
             headers={["Step", "Check", "Status"]}
             rows={[
               ["1", "HF_UPLOAD_TOKEN configured", "500"],
-              ["2", "Bearer token valid (HF userinfo)", "401"],
+              ["2", "Bearer token valid (OAuth or regular HF token)", "401"],
               ["3", "Rate limit not exceeded", "429"],
               ["4", "Valid multipart form data", "400"],
               ["5", "Payload JSON parseable", "400"],
               ["6", "Zip file present", "400"],
-              ["7", "Zip valid (magic bytes, size, contents)", "400"],
-              ["8", "modelName non-empty with /", "400"],
+              ["7", "Zip valid (magic bytes, size, decompressed size, contents)", "400"],
+              ["8", "modelName matches org/model format", "400"],
               ["9", "modelType non-empty", "400"],
               ["10", "precision non-empty", "400"],
               ["11", "Model exists on HuggingFace", "400"],
               ["12", "Model has a license", "400"],
               ["13", "Base model valid (Delta/Adapter)", "400"],
-              ["14", "Upload to HF repo succeeds", "500"],
+              ["14", "Upload to HF repo via LFS succeeds", "500"],
             ]}
           />
 
@@ -405,8 +402,8 @@ export default function ApiDocsPage() {
               ["400", "Missing submission payload."],
               ["400", "Evaluation results zip file is required."],
               ["400", "File is not a valid ZIP archive."],
-              ["400", "ZIP file exceeds 50 MB limit."],
-              ["400", "ZIP decompressed size exceeds 500 MB limit."],
+              ["400", "ZIP file exceeds 20 MB limit."],
+              ["400", "ZIP decompressed size exceeds 100 MB limit."],
               ["400", "ZIP contains invalid file paths."],
               ["400", "ZIP contains disallowed file types: {list}"],
               ["400", "A valid model name in the format 'organization/model-name' is required."],
@@ -421,53 +418,68 @@ export default function ApiDocsPage() {
         {/* ── Usage Examples ── */}
         <Section id="examples">
           <H2>Usage Examples</H2>
+          <P>
+            These examples use <Code>/api/submit-with-file/</Code> for script-based submissions.
+            You can use a regular HuggingFace API token (from <Code>huggingface.co/settings/tokens</Code>) —
+            no OAuth browser flow needed.
+          </P>
 
           <H3>Python</H3>
           <CodeBlock lang="python">{`import requests
 import json
 
-# Obtain an HF access token via device code flow or OAuth
-hf_access_token = "hf_oauth_xxxxxxxx"
+# Use a regular HF API token (hf_*) — no OAuth needed
+# Get one from: https://huggingface.co/settings/tokens
+HF_TOKEN = "hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 payload = {
     "modelName": "org/model-name",
-    "modelType": "instruction",
-    "precision": "bfloat16",
+    "modelType": "instruction",       # pretrained | finetuned | instruction | rl
+    "precision": "bfloat16",          # bfloat16 | float16 | float32 | int8
     "revision": "main",
-    "weightType": "Original",
-    "baseModel": "",
-    "backend": "vlmevalkit",
+    "weightType": "Original",         # Original | Delta | Adapter
+    "baseModel": "",                  # required for Delta/Adapter
+    "backend": "vlmevalkit",          # vlmevalkit | lmmseval | others
     "scores": {
         "vsi_bench": 27.0,
-        "mmsi_bench": None,   # null = not evaluated
-        "site": 0,            # 0 = scored zero
+        "mmsi_bench": 28.6,
+        "blink": None,                # null = not evaluated
+        "site": 0,                    # 0 = evaluated with score of zero
     },
-    "subScores": {
+    "subScores": {                    # optional
         "vsi_bench": {
             "obj_appearance_order_accuracy": 25.3,
             "object_abs_distance": 18.7,
             "object_counting": None,
         },
     },
-    "remarks": "Submitted via script",
+    "remarks": "Submitted via Python script",
 }
 
+# Submit with zip file (max 4.5 MB)
 response = requests.post(
-    "https://easi.lmms-lab.com/api/submit/",
-    headers={"Authorization": f"Bearer {hf_access_token}"},
-    files={"zipFile": ("eval_results.zip", open("eval_results.zip", "rb"), "application/zip")},
+    "https://easi.lmms-lab.com/api/submit-with-file/",
+    headers={"Authorization": f"Bearer {HF_TOKEN}"},
+    files={
+        "zipFile": (
+            "eval_results.zip",
+            open("eval_results.zip", "rb"),
+            "application/zip",
+        ),
+    },
     data={"payload": json.dumps(payload)},
 )
 
-data = response.json()
-if data["success"]:
+result = response.json()
+if result.get("success"):
     print("Submission successful!")
 else:
-    print(f"Error: {data['error']}")`}</CodeBlock>
+    print(f"Error ({response.status_code}): {result.get('error')}")`}</CodeBlock>
 
           <H3>cURL</H3>
-          <CodeBlock lang="bash">{`curl -X POST https://easi.lmms-lab.com/api/submit/ \\
-  -H "Authorization: Bearer hf_oauth_xxxxxxxx" \\
+          <CodeBlock lang="bash">{`# Use a regular HF API token — no OAuth needed
+curl -X POST https://easi.lmms-lab.com/api/submit-with-file/ \\
+  -H "Authorization: Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \\
   -F 'payload={
     "modelName": "org/model-name",
     "modelType": "instruction",
@@ -476,11 +488,21 @@ else:
     "weightType": "Original",
     "baseModel": "",
     "backend": "vlmevalkit",
-    "scores": {"vsi_bench": 27.0},
+    "scores": {"vsi_bench": 27.0, "mmsi_bench": 28.6},
     "subScores": {"vsi_bench": {"object_counting": 30.2}},
     "remarks": "Submitted via cURL"
   }' \\
-  -F "zipFile=@eval_results.zip"`}</CodeBlock>
+  -F "zipFile=@eval_results.zip"
+
+# Response: {"success": true}`}</CodeBlock>
+
+          <H3>Notes</H3>
+          <ul className="space-y-1 mb-4">
+            <Li><strong className="text-lb-text">Zip size limit:</strong> 4.5 MB for script submissions. For larger files, use the web form at <Code>/submit</Code></Li>
+            <Li><strong className="text-lb-text">Token type:</strong> Both regular HF API tokens (<Code>hf_*</Code>) and OAuth tokens (<Code>hf_oauth_*</Code>) are accepted</Li>
+            <Li><strong className="text-lb-text">Rate limit:</strong> 5 submissions per 2-hour window per user</Li>
+            <Li><strong className="text-lb-text">Scores:</strong> Use <Code>null</Code> for benchmarks not evaluated, <Code>0</Code> for zero score</Li>
+          </ul>
         </Section>
       </div>
     </div>

@@ -1,15 +1,23 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { upload } from "@vercel/blob/client";
 
-const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04];
+const LS_TOKEN_KEY = "easi_hf_token";
 
-type UploadState = "idle" | "hover" | "validating" | "success" | "error";
+type UploadState = "idle" | "hover" | "validating" | "uploading" | "success" | "error";
+
+export interface ZipUploadResult {
+  file: File;
+  blobUrl: string;
+  size: number;
+}
 
 interface ZipUploadZoneProps {
-  file: File | null;
-  onFileAccepted: (file: File) => void;
+  uploadResult: ZipUploadResult | null;
+  onFileAccepted: (result: ZipUploadResult) => void;
   onFileRemoved: () => void;
 }
 
@@ -28,18 +36,62 @@ function truncateFilename(name: string, max = 40): string {
   return `${base}...${extension}`;
 }
 
+async function uploadToBlob(
+  file: File,
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  const hfToken = localStorage.getItem(LS_TOKEN_KEY) || "";
+  const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+  if (isLocalDev) {
+    // Local dev: upload via server-side multipart (no 4.5MB limit locally)
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/blob-upload/", {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${hfToken}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return { success: false, error: (data as { error?: string }).error || "Upload failed" };
+      }
+      const { url } = await res.json();
+      return { success: true, url };
+    } catch (err) {
+      return { success: false, error: (err as Error).message || "Upload failed" };
+    }
+  }
+
+  // Production: use Vercel Blob client upload (bypasses 4.5MB limit)
+  try {
+    const blob = await upload(file.name, file, {
+      access: "private",
+      handleUploadUrl: "/api/blob-upload/",
+      clientPayload: JSON.stringify({ token: hfToken }),
+    });
+    return { success: true, url: blob.url };
+  } catch (err) {
+    const msg = (err as Error).message || "Upload failed";
+    if (msg.includes("Not authenticated")) {
+      return { success: false, error: "Session expired. Please sign in again." };
+    }
+    return { success: false, error: msg };
+  }
+}
+
 export default function ZipUploadZone({
-  file,
+  uploadResult,
   onFileAccepted,
   onFileRemoved,
 }: ZipUploadZoneProps) {
-  const [state, setState] = useState<UploadState>(file ? "success" : "idle");
+  const [state, setState] = useState<UploadState>(uploadResult ? "success" : "idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [validatingFile, setValidatingFile] = useState<{name: string; size: number} | null>(null);
+  const [activeFile, setActiveFile] = useState<{ name: string; size: number } | null>(null);
   const dragCounter = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const validateAndAccept = useCallback(
+  const validateAndUpload = useCallback(
     async (f: File) => {
       // Extension check
       if (!f.name.toLowerCase().endsWith(".zip")) {
@@ -52,13 +104,13 @@ export default function ZipUploadZone({
       if (f.size > MAX_SIZE) {
         setState("error");
         setErrorMsg(
-          `File too large (${formatFileSize(f.size)}). Maximum size is 50 MB.`
+          `File too large (${formatFileSize(f.size)}). Maximum size is 20 MB.`
         );
         return;
       }
 
       // Magic bytes check
-      setValidatingFile({ name: f.name, size: f.size });
+      setActiveFile({ name: f.name, size: f.size });
       setState("validating");
       try {
         const slice = f.slice(0, 4);
@@ -76,21 +128,32 @@ export default function ZipUploadZone({
         return;
       }
 
+      // Upload to Vercel Blob
+      setState("uploading");
+      const result = await uploadToBlob(f);
+      if (!result.success || !result.url) {
+        setState("error");
+        setErrorMsg(result.error || "Upload failed. Please try again.");
+        return;
+      }
+
       setState("success");
-      onFileAccepted(f);
+      onFileAccepted({ file: f, blobUrl: result.url, size: f.size });
     },
     [onFileAccepted]
   );
+
+  const hasFile = uploadResult !== null;
 
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (file) return;
+      if (hasFile) return;
       dragCounter.current++;
       if (dragCounter.current === 1) setState("hover");
     },
-    [file]
+    [hasFile]
   );
 
   const handleDragOver = useCallback(
@@ -105,14 +168,14 @@ export default function ZipUploadZone({
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (file) return;
+      if (hasFile) return;
       dragCounter.current--;
       if (dragCounter.current <= 0) {
         dragCounter.current = 0;
         setState((prev) => (prev === "hover" ? "idle" : prev));
       }
     },
-    [file]
+    [hasFile]
   );
 
   const handleDrop = useCallback(
@@ -120,7 +183,7 @@ export default function ZipUploadZone({
       e.preventDefault();
       e.stopPropagation();
       dragCounter.current = 0;
-      if (file) return;
+      if (hasFile) return;
 
       const files = Array.from(e.dataTransfer.files);
       const zipFile = files.find((f) =>
@@ -131,58 +194,66 @@ export default function ZipUploadZone({
         setErrorMsg("No .zip file found. Please upload a .zip file.");
         return;
       }
-      validateAndAccept(zipFile);
+      validateAndUpload(zipFile);
     },
-    [file, validateAndAccept]
+    [hasFile, validateAndUpload]
   );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const f = e.target.files?.[0];
-      if (f) validateAndAccept(f);
+      if (f) validateAndUpload(f);
       e.target.value = "";
     },
-    [validateAndAccept]
+    [validateAndUpload]
   );
 
   const handleClick = useCallback(() => {
-    if (file) return;
+    if (hasFile) return;
     inputRef.current?.click();
-  }, [file]);
+  }, [hasFile]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (file) return;
+      if (hasFile) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         inputRef.current?.click();
       }
     },
-    [file]
+    [hasFile]
   );
 
   const handleRemove = useCallback(() => {
     setState("idle");
     setErrorMsg("");
+    setActiveFile(null);
     onFileRemoved();
   }, [onFileRemoved]);
 
+  // ── Label + description (shared across all states) ──
+  const header = (
+    <>
+      <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
+        Evaluation Results
+      </label>
+      <p className="text-xs text-lb-text-muted mb-2">
+        Upload a .zip file containing all evaluation result files for verification.
+      </p>
+    </>
+  );
+
   // ── Success state ──
-  if (state === "success" && file) {
+  if (state === "success" && uploadResult) {
     return (
       <div className="mt-4">
-        <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
-          Evaluation Results
-        </label>
-        <p className="text-xs text-lb-text-muted mb-2">
-          Upload a .zip file containing all evaluation result files for verification.
-        </p>
+        {header}
         <div
           className="border-2 border-lb-primary rounded-[14px] p-5 animate-fade-in-up"
           style={{ background: "rgba(99,102,241,0.04)" }}
         >
           <span className="sr-only" aria-live="polite">
-            File uploaded successfully: {file.name}
+            File uploaded successfully: {uploadResult.file.name}
           </span>
           <div className="flex items-center gap-3.5">
             <div
@@ -196,10 +267,10 @@ export default function ZipUploadZone({
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-mono text-[13px] font-semibold text-lb-text truncate">
-                {truncateFilename(file.name)}
+                {truncateFilename(uploadResult.file.name)}
               </p>
               <p className="text-xs text-lb-text-secondary">
-                {formatFileSize(file.size)}
+                {formatFileSize(uploadResult.size)}
               </p>
             </div>
             <button
@@ -215,26 +286,33 @@ export default function ZipUploadZone({
     );
   }
 
-  // ── Validating state ──
-  if (state === "validating") {
+  // ── Processing states (validating / uploading) ──
+  if (state === "validating" || state === "uploading") {
+    const messages: Record<string, { title: string; subtitle: string }> = {
+      validating: {
+        title: `Validating${activeFile ? ` ${truncateFilename(activeFile.name)}` : ""}...`,
+        subtitle: `Checking file integrity${activeFile ? ` \u00b7 ${formatFileSize(activeFile.size)}` : ""}`,
+      },
+      uploading: {
+        title: `Uploading${activeFile ? ` ${truncateFilename(activeFile.name)}` : ""}...`,
+        subtitle: activeFile ? formatFileSize(activeFile.size) : "",
+      },
+    };
+    const msg = messages[state];
+
     return (
       <div className="mt-4">
-        <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
-          Evaluation Results
-        </label>
-        <p className="text-xs text-lb-text-muted mb-2">
-          Upload a .zip file containing all evaluation result files for verification.
-        </p>
+        {header}
         <div className="border-2 border-lb-border-emphasis rounded-[14px] p-7 text-center bg-lb-bg">
           <div
             className="w-10 h-10 mx-auto mb-3.5 border-[3px] border-lb-border rounded-full animate-spin-slow"
             style={{ borderTopColor: "#6366f1" }}
           />
           <p className="text-sm font-semibold text-lb-text" aria-live="polite">
-            Validating{validatingFile ? ` ${truncateFilename(validatingFile.name)}` : ""}...
+            {msg.title}
           </p>
           <p className="text-xs text-lb-text-secondary">
-            Checking file integrity{validatingFile ? ` \u00b7 ${formatFileSize(validatingFile.size)}` : ""}
+            {msg.subtitle}
           </p>
         </div>
       </div>
@@ -247,12 +325,7 @@ export default function ZipUploadZone({
 
   return (
     <div className="mt-4">
-      <label className="block text-xs font-semibold uppercase tracking-widest text-lb-text-muted mb-sm">
-        Evaluation Results
-      </label>
-      <p className="text-xs text-lb-text-muted mb-2">
-        Upload a .zip file containing all evaluation result files for verification.
-      </p>
+      {header}
       <div
         role="button"
         tabIndex={0}
@@ -363,7 +436,7 @@ export default function ZipUploadZone({
               </span>
             </p>
             <p className="text-[11px] text-lb-text-muted mt-1">
-              ZIP only &middot; Max 50 MB &middot; Required
+              ZIP only &middot; Max 20 MB &middot; Required
             </p>
           </>
         )}

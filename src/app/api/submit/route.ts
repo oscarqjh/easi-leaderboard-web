@@ -1,277 +1,108 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getModelInfo,
-  hasLicense,
-  buildSubmissionPath,
-  uploadSubmissionToRepo,
-} from "@/lib/hf-api";
+import { verifyUser } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { validateZipBuffer } from "@/lib/zip-validation";
+import { processSubmission, SubmitPayload } from "@/lib/submit-helper";
+import { del, get } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
-const HF_USERINFO_URL = "https://huggingface.co/oauth/userinfo";
-
-interface SubmitPayload {
-  modelName: string;
-  modelType: string;
-  precision: string;
-  revision: string;
-  weightType: string;
-  baseModel: string;
-  backend: string;
-  scores: Record<string, number | null>;
-  subScores?: Record<string, Record<string, number | null>>;
-  remarks: string;
-}
-
-interface HfUserInfo {
-  sub: string;
-  preferred_username?: string;
-  name?: string;
-}
-
-async function verifyUser(request: NextRequest): Promise<HfUserInfo | null> {
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-
-  const accessToken = authHeader.slice(7);
-  if (!accessToken) return null;
-
-  try {
-    const res = await fetch(HF_USERINFO_URL, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as HfUserInfo;
-  } catch {
-    return null;
-  }
+interface SubmitBody extends SubmitPayload {
+  blobUrl: string;
 }
 
 export async function POST(request: NextRequest) {
   const token = process.env.HF_UPLOAD_TOKEN;
-  const repoId =
-    process.env.HF_REQUESTS_REPO || "lmms-lab-si/EASI-Leaderboard-Requests";
+  const repoId = process.env.HF_REQUESTS_REPO || "lmms-lab-si/EASI-Leaderboard-Requests";
 
   if (!token) {
     console.error("Missing HF_UPLOAD_TOKEN env var");
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Server configuration error. Please contact the maintainers.",
-      },
+      { success: false, error: "Server configuration error. Please contact the maintainers." },
       { status: 500 }
     );
   }
 
-  // ── Verify authentication via Bearer token ──
-  const user = await verifyUser(request);
+  // Verify authentication
+  const user = await verifyUser(request.headers.get("Authorization"));
   if (!user) {
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Your session has expired. Please sign in with HuggingFace again.",
-      },
+      { success: false, error: "Your session has expired. Please sign in with HuggingFace again." },
       { status: 401 }
     );
   }
 
   const userName = user.preferred_username || user.name || user.sub;
 
-  // ── Rate limit ──
+  // Rate limit
   const rateCheck = checkRateLimit(userName);
   if (!rateCheck.allowed) {
     return NextResponse.json(
-      {
-        success: false,
-        error: `You've reached the submission limit (5 per 2 hours). Please try again in ${rateCheck.retryAfterMinutes} minutes.`,
-      },
+      { success: false, error: `You've reached the submission limit (5 per 2 hours). Please try again in ${rateCheck.retryAfterMinutes} minutes.` },
       { status: 429 }
     );
   }
 
-  // ── Parse multipart form data ──
-  let formData: FormData;
+  // Parse JSON body
+  let body: SubmitBody;
   try {
-    formData = await request.formData();
+    body = (await request.json()) as SubmitBody;
   } catch {
     return NextResponse.json(
-      { success: false, error: "Invalid request. Expected multipart form data." },
+      { success: false, error: "Invalid request body." },
       { status: 400 }
     );
   }
 
-  // ── Extract payload JSON ──
-  const payloadStr = formData.get("payload");
-  if (typeof payloadStr !== "string") {
-    return NextResponse.json(
-      { success: false, error: "Missing submission payload." },
-      { status: 400 }
-    );
-  }
-
-  let body: SubmitPayload;
-  try {
-    body = JSON.parse(payloadStr) as SubmitPayload;
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid submission payload." },
-      { status: 400 }
-    );
-  }
-
-  // ── Extract zip file ──
-  const zipFile = formData.get("zipFile");
-  if (!zipFile || !(zipFile instanceof File)) {
+  // Validate blobUrl
+  if (!body.blobUrl) {
     return NextResponse.json(
       { success: false, error: "Evaluation results zip file is required." },
       { status: 400 }
     );
   }
 
-  const zipArrayBuffer = await zipFile.arrayBuffer();
-  const zipBuffer = Buffer.from(zipArrayBuffer);
-
-  // ── Validate zip ──
-  const zipResult = validateZipBuffer(zipBuffer);
-  if (!zipResult.valid) {
+  // SSRF protection: validate URL matches Vercel Blob storage
+  if (!/^https:\/\/[a-z0-9]+\.(?:private|public)\.blob\.vercel-storage\.com\//.test(body.blobUrl)) {
     return NextResponse.json(
-      { success: false, error: zipResult.error },
+      { success: false, error: "Invalid upload reference." },
       { status: 400 }
     );
   }
 
-  // ── Required fields ──
-  if (!body.modelName || !body.modelName.includes("/")) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "A valid model name in the format 'organization/model-name' is required.",
-      },
-      { status: 400 }
-    );
-  }
-  if (!body.modelType) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Please select a model type (pretrained, finetuned, instruction, or rl).",
-      },
-      { status: 400 }
-    );
-  }
-  if (!body.precision) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Please select a precision (bfloat16, float16, float32, or int8).",
-      },
-      { status: 400 }
-    );
-  }
-
-  // ── Verify model exists on HuggingFace ──
-  const modelInfo = await getModelInfo(body.modelName, token);
-  if (!modelInfo) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Model "${body.modelName}" was not found on HuggingFace. Please verify the model name and ensure it is publicly accessible.`,
-      },
-      { status: 400 }
-    );
-  }
-
-  // ── Verify license exists ──
-  if (!hasLicense(modelInfo)) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Model "${body.modelName}" does not have a license set. Please add a license to your model card on HuggingFace before submitting.`,
-      },
-      { status: 400 }
-    );
-  }
-
-  // ── For Delta/Adapter weights, require and verify base model ──
-  if (body.weightType === "Delta" || body.weightType === "Adapter") {
-    if (!body.baseModel) {
+  // Fetch zip from Vercel Blob
+  let zipBuffer: Buffer;
+  try {
+    const blobData = await get(body.blobUrl, {
+      access: "private",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+    if (!blobData || !blobData.stream) {
       return NextResponse.json(
-        {
-          success: false,
-          error: `Base model is required when using ${body.weightType} weights. Please specify the base model.`,
-        },
+        { success: false, error: "Failed to retrieve uploaded zip file." },
         { status: 400 }
       );
     }
-    const baseModelInfo = await getModelInfo(body.baseModel, token);
-    if (!baseModelInfo) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Base model "${body.baseModel}" was not found on HuggingFace. Please verify the base model name.`,
-        },
-        { status: 400 }
-      );
+    const chunks: Uint8Array[] = [];
+    const reader = blobData.stream.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) chunks.push(value);
     }
-  }
-
-  // ── Build submission path and JSON ──
-  const revision = body.revision || "main";
-  const submissionFolder = buildSubmissionPath(
-    userName,
-    body.modelName,
-    body.precision,
-    body.weightType || "Original"
-  );
-
-  const submitTime = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-
-  const submissionContent = {
-    user_id: userName,
-    model_id: body.modelName,
-    base_model: body.baseModel || "",
-    model_sha: revision,
-    model_dtype: body.precision,
-    weight_type: body.weightType || "Original",
-    backend: body.backend || "others",
-    model_type: body.modelType,
-    submit_time: submitTime,
-    remarks: body.remarks || "Submitted via EASI Leaderboard",
-    config: {},
-    results: body.scores,
-    sub_scores: body.subScores || {},
-  };
-
-  const fileContent = JSON.stringify(submissionContent, null, 2);
-
-  // ── Upload to HF dataset repo ──
-  const uploadResult = await uploadSubmissionToRepo(
-    repoId,
-    token,
-    submissionFolder,
-    fileContent,
-    zipBuffer,
-    `Add ${body.modelName} submission by ${userName}`
-  );
-
-  if (!uploadResult.success) {
-    console.error("Upload failed:", uploadResult.error);
+    zipBuffer = Buffer.concat(chunks);
+  } catch (err) {
+    console.error("[submit] Blob fetch error:", err);
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          "Failed to upload your submission to the repository. Please try again later or contact the maintainers if the issue persists.",
-      },
-      { status: 500 }
+      { success: false, error: "Failed to retrieve uploaded zip file." },
+      { status: 400 }
     );
   }
 
-  return NextResponse.json({ success: true });
+  // Process submission (validate zip, check model, upload to HF)
+  const result = await processSubmission(body, zipBuffer, userName, token, repoId);
+
+  // Clean up Blob (best-effort)
+  await del(body.blobUrl).catch(() => {});
+
+  return result;
 }

@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { id: "get-apiauthcallback", label: "GET /api/auth/callback", method: "GET" },
   { id: "get-apileaderboard", label: "GET /api/leaderboard", method: "GET" },
   { id: "post-apisubmit", label: "POST /api/submit", method: "POST" },
+  { id: "post-apisubmitwithfile", label: "POST /api/submit-with-file", method: "POST" },
   { id: "examples", label: "Usage Examples", indent: true },
 ];
 
