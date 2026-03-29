@@ -718,6 +718,8 @@ export default function SubmitPage() {
         </h1>
         <p className="text-sm text-lb-text-secondary mb-8">
           Authenticate with HuggingFace, then fill in each field below. The form expands as you go.
+          If you are continuously facing difficulty uploading, please email your eval results
+          to <a href="mailto:easi-lmms-lab@outlook.com" className="text-lb-primary underline underline-offset-2">easi-lmms-lab@outlook.com</a>.
         </p>
 
         {/* S0: Auth */}
