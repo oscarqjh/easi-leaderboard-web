@@ -81,17 +81,17 @@ export default function CapabilityTable({
 
   return (
     <div className="bg-lb-surface border border-lb-border rounded-lg shadow-sm overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-[11px] md:text-sm">
         <thead>
           <tr className="border-b-2 border-lb-border">
-            <th className="sticky left-0 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap w-12">
+            <th className="sticky left-0 z-10 bg-lb-surface px-2 py-2 md:px-4 md:py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap w-10 md:w-12">
               #
             </th>
-            <th className="sticky left-12 z-10 bg-lb-surface px-4 py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap min-w-[180px]">
+            <th className="sticky left-10 md:left-12 z-10 bg-lb-surface px-2 py-2 md:px-4 md:py-3 text-left font-semibold text-lb-text-muted text-xs uppercase tracking-wider whitespace-nowrap md:min-w-[180px]">
               Model
             </th>
             <th
-              className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+              className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[70px] md:min-w-[80px] ${
                 sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
               }`}
               onClick={() => onSort("average")}
@@ -102,7 +102,7 @@ export default function CapabilityTable({
             {capLabels.map((label) => (
               <th
                 key={label}
-                className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[80px] ${
+                className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[70px] md:min-w-[80px] ${
                   sortColumn === label ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                 }`}
                 onClick={() => onSort(label)}
@@ -127,25 +127,29 @@ export default function CapabilityTable({
                   ${i % 2 === 1 ? "bg-black/[0.01]" : ""}
                 `}
               >
-                <td className={`sticky left-0 z-10 px-4 py-3 ${i % 2 === 1 ? "bg-[#faf9fb]" : "bg-lb-surface"}`}>
+                <td className={`sticky left-0 z-10 px-2 py-2 md:px-4 md:py-3 ${i % 2 === 1 ? "bg-[#faf9fb]" : "bg-lb-surface"}`}>
                   <RankBadge rank={row.rank} />
                 </td>
-                <td className={`sticky left-12 z-10 px-4 py-3 whitespace-nowrap ${i % 2 === 1 ? "bg-[#faf9fb]" : "bg-lb-surface"}`}>
-                  {model.link ? (
-                    <a
-                      href={model.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-lb-text hover:text-lb-primary transition-colors duration-150"
-                    >
-                      {model.displayName || model.name}
-                    </a>
-                  ) : (
-                    <span className="font-semibold text-lb-text">{model.displayName || model.name}</span>
-                  )}
-                  {model.backend && <BackendBadge backend={model.backend} />}
+                <td className={`sticky left-10 md:left-12 z-10 px-2 py-2 md:px-4 md:py-3 ${i % 2 === 1 ? "bg-[#faf9fb]" : "bg-lb-surface"}`}>
+                  <div className="max-w-[130px] md:max-w-none line-clamp-2 md:line-clamp-none md:whitespace-nowrap">
+                    {model.link ? (
+                      <a
+                        href={model.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-lb-text hover:text-lb-primary transition-colors duration-150"
+                      >
+                        {model.displayName || model.name}
+                      </a>
+                    ) : (
+                      <span className="font-semibold text-lb-text">{model.displayName || model.name}</span>
+                    )}
+                    <span className="hidden md:inline">
+                      {model.backend && <BackendBadge backend={model.backend} />}
+                    </span>
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-2 py-2 md:px-4 md:py-3 text-center">
                   <span
                     className={`font-mono text-sm font-semibold ${
                       row.capAverage !== null && row.capAverage === bestAvg
@@ -211,7 +215,7 @@ export default function CapabilityTable({
                   }
 
                   return (
-                    <td key={label} className="px-4 py-3 text-center">
+                    <td key={label} className="px-2 py-2 md:px-4 md:py-3 text-center">
                       {tooltipContent ? (
                         <Tooltip content={tooltipContent} showIcon>
                           {scoreEl}
@@ -235,6 +239,9 @@ export default function CapabilityTable({
           )}
         </tbody>
       </table>
+      <p className="text-center text-[10px] text-lb-text-muted py-1.5 md:hidden">
+        ← swipe to see more benchmarks →
+      </p>
     </div>
   );
 }
