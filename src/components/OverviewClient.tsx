@@ -194,7 +194,7 @@ export default function OverviewClient({ data, capabilityMap }: OverviewClientPr
       <BarChart models={barChartModels} />
 
       {/* Export + Table */}
-      <div className="flex justify-end relative z-20">
+      <div className="flex justify-end relative z-20 -mt-2 md:mt-0">
         <ExportButton
           models={rankedModels}
           visibleColumns={filters.visibleColumns}
