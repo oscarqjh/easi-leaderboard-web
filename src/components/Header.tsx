@@ -14,7 +14,7 @@ export default function Header() {
 
   return (
     <header className="bg-lb-surface border-b border-lb-border">
-      <div className="max-w-7xl mx-auto px-md flex items-center justify-between h-14">
+      <div className="max-w-7xl mx-auto px-4 md:px-md flex items-center justify-between h-14">
         <Link
           href="/"
           className="font-heading font-semibold text-lg text-lb-text tracking-tight hover:opacity-70 transition-opacity duration-150"
@@ -23,31 +23,34 @@ export default function Header() {
           <span className="text-lb-primary">Leaderboard</span>
         </Link>
         <nav className="flex items-center gap-1">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname?.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`
-                  px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150
-                  focus-ring
-                  ${
-                    isActive
-                      ? "bg-lb-nav text-white"
-                      : "text-lb-text-secondary hover:text-lb-text hover:bg-lb-primary-light"
-                  }
-                `}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          {/* Nav links — hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname?.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150
+                    focus-ring
+                    ${
+                      isActive
+                        ? "bg-lb-nav text-white"
+                        : "text-lb-text-secondary hover:text-lb-text hover:bg-lb-primary-light"
+                    }
+                  `}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-lb-border mx-1.5" />
+            {/* Divider */}
+            <div className="w-px h-5 bg-lb-border mx-1.5" />
+          </div>
 
-          {/* External links — icon only */}
+          {/* External links — always visible */}
           <a
             href="https://github.com/EvolvingLMMs-Lab/EASI"
             target="_blank"
