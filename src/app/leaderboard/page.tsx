@@ -90,9 +90,9 @@ export default function LeaderboardPage() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-md py-lg">
+      <div className="max-w-7xl mx-auto px-3 md:px-md py-8 md:py-lg">
         <div className="mb-lg animate-fade-in-up">
-          <div className="h-10 w-80 bg-lb-border/40 rounded-md animate-pulse mb-3" />
+          <div className="h-8 md:h-10 w-60 md:w-80 bg-lb-border/40 rounded-md animate-pulse mb-3" />
           <div className="h-4 w-48 bg-lb-border/30 rounded-md animate-pulse" />
         </div>
         <div className="space-y-md">
@@ -110,9 +110,9 @@ export default function LeaderboardPage() {
   // Error state
   if (error || !data) {
     return (
-      <div className="max-w-7xl mx-auto px-md py-lg">
+      <div className="max-w-7xl mx-auto px-3 md:px-md py-8 md:py-lg">
         <div className="mb-lg">
-          <h1 className="font-heading text-heading font-semibold text-lb-text">
+          <h1 className="font-heading text-xl md:text-heading font-semibold text-lb-text">
             EASI: Evaluation of MLLMs
             <br />
             <em className="text-lb-primary italic">on Spatial Intelligence</em>
@@ -146,9 +146,9 @@ export default function LeaderboardPage() {
 
   return (
     <div>
-      <div className="max-w-7xl mx-auto px-md py-lg">
+      <div className="max-w-7xl mx-auto px-3 md:px-md py-8 md:py-lg">
         <div className="mb-lg animate-fade-in-up">
-          <h1 className="font-heading text-heading font-semibold text-lb-text">
+          <h1 className="font-heading text-xl md:text-heading font-semibold text-lb-text">
             EASI: Evaluation of MLLMs
             <br />
             <em className="text-lb-primary italic">on Spatial Intelligence</em>
@@ -165,13 +165,13 @@ export default function LeaderboardPage() {
       </div>
 
       {/* ── Citation ── */}
-      <section className="bg-lb-surface py-16 px-md">
+      <section className="bg-lb-surface py-8 md:py-16 px-3 md:px-md">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-heading text-subheading font-semibold text-lb-text mb-6">
+          <h2 className="font-heading text-base md:text-subheading font-semibold text-lb-text mb-6">
             Citation
           </h2>
-          <div className="relative bg-lb-bg border border-lb-border rounded-lg shadow-sm p-md">
-            <pre className="font-mono text-xs text-lb-text overflow-x-auto whitespace-pre leading-relaxed">
+          <div className="relative bg-lb-bg border border-lb-border rounded-lg shadow-sm p-3 md:p-md">
+            <pre className="font-mono text-[10px] md:text-xs text-lb-text overflow-x-auto whitespace-pre leading-relaxed">
               {CITATION}
             </pre>
             <button
@@ -185,7 +185,7 @@ export default function LeaderboardPage() {
       </section>
 
       {/* ── Links ── */}
-      <section className="bg-lb-bg border-t border-lb-border py-12 px-md">
+      <section className="bg-lb-bg border-t border-lb-border py-8 md:py-12 px-3 md:px-md">
         <div className="max-w-3xl mx-auto">
           <div className="flex flex-wrap items-center justify-center gap-4">
             {EXTERNAL_LINKS.map((link) => (
