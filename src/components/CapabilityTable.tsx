@@ -91,7 +91,7 @@ export default function CapabilityTable({
               Model
             </th>
             <th
-              className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[70px] md:min-w-[80px] ${
+              className={`px-2 py-2 md:px-4 md:py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[70px] md:min-w-[80px] ${
                 sortColumn === "average" ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
               }`}
               onClick={() => onSort("average")}
@@ -102,7 +102,7 @@ export default function CapabilityTable({
             {capLabels.map((label) => (
               <th
                 key={label}
-                className={`px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[70px] md:min-w-[80px] ${
+                className={`px-2 py-2 md:px-4 md:py-3 text-center font-semibold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-colors duration-150 min-w-[70px] md:min-w-[80px] ${
                   sortColumn === label ? "text-lb-primary" : "text-lb-text-muted hover:text-lb-text-secondary"
                 }`}
                 onClick={() => onSort(label)}
