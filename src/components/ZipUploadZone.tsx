@@ -1,18 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { upload } from "@vercel/blob/client";
 
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04];
-const LS_TOKEN_KEY = "easi_hf_token";
 
-type UploadState = "idle" | "hover" | "validating" | "uploading" | "success" | "error";
+type UploadState = "idle" | "hover" | "validating" | "success" | "error";
 
 export interface ZipUploadResult {
   file: File;
-  blobUrl: string;
-  size: number;
 }
 
 interface ZipUploadZoneProps {
@@ -34,50 +30,6 @@ function truncateFilename(name: string, max = 40): string {
   const extension = name.slice(ext);
   const base = name.slice(0, max - extension.length - 3);
   return `${base}...${extension}`;
-}
-
-async function uploadToBlob(
-  file: File,
-): Promise<{ success: boolean; url?: string; error?: string }> {
-  const hfToken = localStorage.getItem(LS_TOKEN_KEY) || "";
-  const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-  if (isLocalDev) {
-    // Local dev: upload via server-side multipart (no 4.5MB limit locally)
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/blob-upload/", {
-        method: "PUT",
-        headers: { "Authorization": `Bearer ${hfToken}` },
-        body: formData,
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        return { success: false, error: (data as { error?: string }).error || "Upload failed" };
-      }
-      const { url } = await res.json();
-      return { success: true, url };
-    } catch (err) {
-      return { success: false, error: (err as Error).message || "Upload failed" };
-    }
-  }
-
-  // Production: use Vercel Blob client upload (bypasses 4.5MB limit)
-  try {
-    const blob = await upload(file.name, file, {
-      access: "private",
-      handleUploadUrl: "/api/blob-upload/",
-      clientPayload: JSON.stringify({ token: hfToken }),
-    });
-    return { success: true, url: blob.url };
-  } catch (err) {
-    const msg = (err as Error).message || "Upload failed";
-    if (msg.includes("Not authenticated")) {
-      return { success: false, error: "Session expired. Please sign in again." };
-    }
-    return { success: false, error: msg };
-  }
 }
 
 export default function ZipUploadZone({
@@ -128,17 +80,8 @@ export default function ZipUploadZone({
         return;
       }
 
-      // Upload to Vercel Blob
-      setState("uploading");
-      const result = await uploadToBlob(f);
-      if (!result.success || !result.url) {
-        setState("error");
-        setErrorMsg(result.error || "Upload failed. Please try again.");
-        return;
-      }
-
       setState("success");
-      onFileAccepted({ file: f, blobUrl: result.url, size: f.size });
+      onFileAccepted({ file: f });
     },
     [onFileAccepted]
   );
@@ -270,7 +213,7 @@ export default function ZipUploadZone({
                 {truncateFilename(uploadResult.file.name)}
               </p>
               <p className="text-xs text-lb-text-secondary">
-                {formatFileSize(uploadResult.size)}
+                {formatFileSize(uploadResult.file.size)}
               </p>
             </div>
             <button
@@ -286,19 +229,12 @@ export default function ZipUploadZone({
     );
   }
 
-  // ── Processing states (validating / uploading) ──
-  if (state === "validating" || state === "uploading") {
-    const messages: Record<string, { title: string; subtitle: string }> = {
-      validating: {
-        title: `Validating${activeFile ? ` ${truncateFilename(activeFile.name)}` : ""}...`,
-        subtitle: `Checking file integrity${activeFile ? ` \u00b7 ${formatFileSize(activeFile.size)}` : ""}`,
-      },
-      uploading: {
-        title: `Uploading${activeFile ? ` ${truncateFilename(activeFile.name)}` : ""}...`,
-        subtitle: activeFile ? formatFileSize(activeFile.size) : "",
-      },
+  // ── Processing state (validating) ──
+  if (state === "validating") {
+    const msg = {
+      title: `Validating${activeFile ? ` ${truncateFilename(activeFile.name)}` : ""}...`,
+      subtitle: `Checking file integrity${activeFile ? ` \u00b7 ${formatFileSize(activeFile.size)}` : ""}`,
     };
-    const msg = messages[state];
 
     return (
       <div className="mt-4">

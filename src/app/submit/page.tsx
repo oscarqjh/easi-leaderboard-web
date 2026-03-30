@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { BENCHMARKS } from "@/lib/constants";
-import ZipUploadZone, { ZipUploadResult } from "@/components/ZipUploadZone";
+import ZipUploadZone from "@/components/ZipUploadZone";
+import { upload } from "@vercel/blob/client";
 
 /* ── Types ── */
 
@@ -25,7 +26,7 @@ interface FormData {
   subScores: Record<string, Record<string, string>>;
   subScoresExpanded: Record<string, boolean>;
   remarks: string;
-  zipUpload: ZipUploadResult | null;
+  zipUpload: { file: File } | null;
 }
 
 interface SubmitPayload {
@@ -542,21 +543,50 @@ export default function SubmitPage() {
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     setSubmitError(null);
-    const payload = buildPayload();
 
     try {
+      if (!form.zipUpload?.file) {
+        throw new Error("Evaluation results zip file is required.");
+      }
+
       const accessToken = localStorage.getItem(LS_TOKEN_KEY) || "";
 
+      // Step 1: Upload zip to Vercel Blob
+      let blobUrl: string;
+      const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+      if (isLocalDev) {
+        const formData = new FormData();
+        formData.append("file", form.zipUpload.file);
+        const blobRes = await fetch("/api/blob-upload/", {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${accessToken}` },
+          body: formData,
+        });
+        if (!blobRes.ok) {
+          const data = await blobRes.json().catch(() => ({}));
+          throw new Error((data as { error?: string }).error || "Failed to upload zip file.");
+        }
+        const blobData = await blobRes.json();
+        blobUrl = blobData.url;
+      } else {
+        const blob = await upload(form.zipUpload.file.name, form.zipUpload.file, {
+          access: "private",
+          handleUploadUrl: "/api/blob-upload/",
+          clientPayload: JSON.stringify({ token: accessToken }),
+        });
+        blobUrl = blob.url;
+      }
+
+      // Step 2: Submit with blobUrl
+      const payload = buildPayload();
       const res = await fetch("/api/submit/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          ...payload,
-          blobUrl: form.zipUpload?.blobUrl,
-        }),
+        body: JSON.stringify({ ...payload, blobUrl }),
       });
 
       if (!res.ok) {
@@ -1060,9 +1090,9 @@ export default function SubmitPage() {
                 <span className="font-mono text-lb-text">
                   {form.zipUpload.file.name}{" "}
                   <span className="text-lb-text-muted font-sans">
-                    ({form.zipUpload.size < 1024 * 1024
-                      ? `${(form.zipUpload.size / 1024).toFixed(1)} KB`
-                      : `${(form.zipUpload.size / (1024 * 1024)).toFixed(1)} MB`})
+                    ({form.zipUpload.file.size < 1024 * 1024
+                      ? `${(form.zipUpload.file.size / 1024).toFixed(1)} KB`
+                      : `${(form.zipUpload.file.size / (1024 * 1024)).toFixed(1)} MB`})
                   </span>
                 </span>
               </>
